@@ -1,0 +1,9 @@
+golang
+hadolint
+nodejs
+pre-commit
+poetry
+python
+terraform
+uv
+yarn

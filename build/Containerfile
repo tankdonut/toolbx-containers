@@ -1,0 +1,56 @@
+ARG FEDORA_VERSION
+ARG TOOLS_REGISTRY
+
+# hadolint ignore=DL3006,DL3007
+FROM ${TOOLS_REGISTRY}/tools:latest as tools
+
+FROM quay.io/fedora/fedora-toolbox:${FEDORA_VERSION}
+
+ARG FEDORA_VERSION
+
+# hadolint ignore=SC2046,DL3016,DL3041
+RUN dnf install -y "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm" \
+    "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm" && \
+    dnf clean all
+
+COPY fedora-packages.txt /vendor/
+
+COPY rootfs/etc/yum.repos.d/ /etc/yum.repos.d/
+
+# hadolint ignore=SC2046,DL3016,DL3041
+RUN dnf install -y $(awk '!/^($|#)/ { print $1 }' /vendor/fedora-packages.txt) && \
+    dnf clean all
+
+# https://librewolf.net/installation/fedora/
+# hadolint ignore=DL3041
+RUN dnf copr enable -y bgstack15/AfterMozilla && \
+    dnf install --refresh -y librewolf && \
+    dnf clean all
+
+# hadolint ignore=DL3041
+RUN dnf install -y libxshmfence && \
+    dnf install -y codium && \
+    dnf clean all
+
+RUN curl -sSL -o /tmp/ngrok.tar.gz "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz" && \
+    tar xzvf /tmp/ngrok.tar.gz -C /usr/local/bin && \
+    rm -rf /tmp/ngrok.tar.gz
+
+RUN ln -sf /usr/local/bin/buildah /usr/bin/host-spawn && \
+    ln -sf /usr/local/bin/flatpak /usr/bin/host-spawn && \
+    ln -sf /usr/local/bin/podman /usr/bin/host-spawn && \
+    ln -sf /usr/local/bin/podman-compose /usr/bin/host-spawn && \
+    ln -sf /usr/local/bin/rpm-ostree /usr/bin/host-spawn
+
+COPY rootfs/usr/share/fonts/ /usr/share/fonts/
+
+RUN fc-cache -f
+
+COPY rootfs/ /
+
+COPY --from=tools /dist/ /vendor/bin/
+
+# add python, node, and packages bin to PATH
+ENV PATH="/vendor/bin:/vendor/python/bin:/vendor/node_modules/.bin:${PATH}"
+
+ENV WORKSPACE="${HOME}/Development"

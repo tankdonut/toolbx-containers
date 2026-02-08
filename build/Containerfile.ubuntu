@@ -1,0 +1,37 @@
+ARG TOOLS_REGISTRY
+ARG UBUNTU_VERSION
+
+# hadolint ignore=DL3006,DL3007
+FROM ${TOOLS_REGISTRY}/tools:latest as tools
+
+FROM docker.io/library/ubuntu:${UBUNTU_VERSION}
+
+LABEL com.github.containers.toolbox="true"
+
+COPY ubuntu-packages.txt /vendor/ubuntu-packages.txt
+
+# hadolint ignore=DL3008,SC2046
+RUN apt-get update && apt-get install -y --no-install-recommends $(awk '!/^($|#)/ { print $1 }' /vendor/ubuntu-packages.txt) && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# hadolint ignore=DL3008
+RUN wget -qO vscodium.gpg https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg && \
+    gpg --dearmor < vscodium.gpg > /usr/share/keyrings/vscodium-archive-keyring.gpg && rm -rf vscodium.gpg && \
+    echo 'deb [ signed-by=/usr/share/keyrings/vscodium-archive-keyring.gpg ] https://download.vscodium.com/debs vscodium main' > /etc/apt/sources.list.d/vscodium.list && \
+    apt-get update && apt-get install -y --no-install-recommends codium && apt-get clean
+
+# hadolint ignore=SC2114
+RUN sed -i -e 's/ ALL$/ NOPASSWD:ALL/' /etc/sudoers && \
+    rm -rf /home
+
+COPY rootfs/usr/share/fonts/ /usr/share/fonts/
+
+RUN fc-cache -f
+
+COPY rootfs/ /
+
+COPY --from=tools /dist/ /vendor/bin/
+
+# add /vendor/bin to PATH
+ENV PATH="/vendor/bin:${PATH}"
+
+ENV WORKSPACE="${HOME}/Development"

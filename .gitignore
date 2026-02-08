@@ -1,0 +1,5 @@
+.env
+cache/
+dist/
+.venv/
+.ruff_cache/

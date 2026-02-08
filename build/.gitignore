@@ -1,0 +1,9 @@
+# node / yarn
+.yarn/
+.yarnrc.yml
+.pnp.cjs
+.pnp.loader.mjs
+node_modules/
+
+# python
+.venv/

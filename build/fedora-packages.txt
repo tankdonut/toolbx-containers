@@ -1,0 +1,111 @@
+# containers
+helm
+kubernetes-client
+kubernetes-kubeadm
+moby-engine
+
+# crush
+crush
+
+# file archives
+p7zip
+p7zip-plugins
+unrar
+
+# fonts
+fontconfig
+fontconfig-devel
+freetype
+freetype-devel
+google-noto-sans-armenian-vf-fonts
+google-noto-sans-canadian-aboriginal-vf-fonts
+google-noto-sans-georgian-vf-fonts
+google-noto-sans-hebrew-vf-fonts
+google-noto-sans-lao-vf-fonts
+google-noto-sans-mono-vf-fonts
+google-noto-sans-thaana-vf-fonts
+google-noto-sans-vf-fonts
+google-noto-serif-vf-fonts
+google-noto-serif-lao-vf-fonts
+google-noto-sans-ethiopic-vf-fonts
+google-noto-serif-sinhala-vf-fonts
+google-noto-color-emoji-fonts
+
+# c / c++
+gcc-c++
+
+# go
+go
+
+# misc
+alien
+android-tools
+bats
+bind-utils
+clamav
+ffmpeg
+ffmpeg-devel
+gh
+git
+git-credential-libsecret
+glibc-static
+gstreamer1-plugin-openh264
+hadolint
+host-spawn
+ImageMagick
+jq
+just
+libpq
+libpq-devel
+libstdc++-devel
+# needed for generating pdf from markdown
+libXScrnSaver
+lz4
+make
+nmap
+openssh-askpass
+openssl
+openssl-devel
+perl
+readline-devel
+rpmdevtools
+rpmlint
+rpmrebuild
+sqlite-devel
+stow
+tk-devel
+util-linux-user
+vim
+vulkan-loader
+xz
+
+# node
+nodejs
+npm
+pnpm
+
+# python
+conda
+poetry
+pre-commit
+python-unversioned-command
+python3
+python3-devel
+python3-dotenv
+python3-invoke
+python3-poetry
+python3-pip
+python3-setuptools
+python3-setuptools-rust
+python3-wheel
+ruff
+uv
+
+# rust
+cargo
+rust
+
+# zsh
+zsh
+zsh-autosuggestions
+zsh-syntax-highlighting
