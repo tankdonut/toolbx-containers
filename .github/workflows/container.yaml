@@ -1,0 +1,118 @@
+name: container
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+
+permissions:
+  packages: write
+
+env:
+  FEDORA_VERSION: "43"
+
+jobs:
+  build-test-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free disk space on runner
+        run: |
+          sudo rm -rvf /usr/share/dotnet
+          sudo rm -rvf /usr/local/lib/android
+          sudo rm -rvf /opt/ghc
+          sudo rm -rvf /opt/hostedtoolcache/CodeQL
+          sudo rm -rvf "$AGENT_TOOLSDIRECTORY" || true
+
+          # Podman/containers cleanup (safe if you only need images in this job)
+          podman system prune -af || true
+          podman image prune -af || true
+
+          # Docker cleanup as well, in case it is used elsewhere in your workflows
+          sudo docker system prune -af || true
+          sudo docker image prune -af || true
+          sudo docker volume prune -f || true
+
+          # Clean temporary dirs
+          sudo rm -rvf /tmp/* /var/tmp/*
+
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Generate Image Metadata
+        id: metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,format=short,prefix=
+            type=ref,event=tag
+            type=ref,event=branch
+            # Only add FEDORA_VERSION tag on main
+            type=raw,value=${{ env.FEDORA_VERSION }},enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Set up variables
+        id: vars
+        run: |
+          echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "IMAGE=ghcr.io/${{ github.repository }}" >> $GITHUB_ENV
+
+      - name: Login to GitHub Container Registry
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check For Existing Image
+        id: image_exists
+        run: |
+          set -e
+          # Try to pull the image with the SHA tag
+          if podman pull $IMAGE:${SHORT_SHA}; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build Image (if needed)
+        if: steps.image_exists.outputs.exists == 'false'
+        uses: redhat-actions/buildah-build@v2
+        id: build
+        with:
+          build-args: |
+            FEDORA_VERSION=${{ env.FEDORA_VERSION }}
+            TOOLS_REGISTRY=ghcr.io/tankdonut
+          context: ${{ env.GITHUB_WORKSPACE }}/build
+          containerfiles: |
+            ${{ env.GITHUB_WORKSPACE }}/build/Containerfile
+          platforms: |
+            linux/amd64
+          labels: ${{ steps.metadata.outputs.labels }}
+          tags: ${{ steps.metadata.outputs.tags }}
+
+      - name: Push Image (if built)
+        if: steps.image_exists.outputs.exists == 'false'
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build.outputs.image }}
+          tags: ${{ steps.build.outputs.tags }}
+
+      - name: Retag and Push (if image already exists)
+        if: steps.image_exists.outputs.exists == 'true'
+        run: |
+          TAGS="${{ steps.metadata.outputs.tags }}"
+
+          for tag in $TAGS; do
+            if [ "$tag" != "$IMAGE:$SHORT_SHA" ]; then
+              echo "Retagging $IMAGE:$SHORT_SHA as $IMAGE:$tag"
+              podman tag $IMAGE:$SHORT_SHA $tag
+              podman push $tag
+            fi
+          done
