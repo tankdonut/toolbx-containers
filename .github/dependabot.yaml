@@ -12,3 +12,7 @@ updates:
     directory: build/
     schedule:
       interval: weekly
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
