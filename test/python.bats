@@ -18,6 +18,10 @@ function check_python_package() {
 	check_path python
 }
 
+@test "test python executes" {
+	python -c "print('ok')"
+}
+
 @test "test poetry is in PATH" {
 	check_path poetry
 }
@@ -27,7 +31,7 @@ function check_python_package() {
 }
 
 @test "test uv is in PATH" {
-        check_path uv
+	check_path uv
 }
 
 @test "test invoke python package is installed" {

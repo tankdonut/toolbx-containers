@@ -22,3 +22,10 @@ repos:
     hooks:
       - id: ruff-check
         args: ["--fix"]
+
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.14.0
+    hooks:
+      - id: markdownlint-cli2
+        args: ["--config", ".markdownlint.json"]
+        exclude: ^build/rootfs/

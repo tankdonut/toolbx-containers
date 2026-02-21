@@ -1,6 +1,7 @@
 # ruff: noqa: PT028
 import os
 from pathlib import Path
+import shlex
 import subprocess
 
 from dotenv import load_dotenv
@@ -15,7 +16,9 @@ UBUNTU_VERSION = os.getenv("UBUNTU_VERSION", "24.04")
 DESTINATION_REGISTRY = os.getenv("DESTINATION_REGISTRY", "localhost")
 TOOLS_REGISTRY = os.getenv("TOOLS_REGISTRY", "localhost")
 
-COMMIT_SHA = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
+
+def get_commit_sha() -> str:
+    return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
 
 
 @task
@@ -24,22 +27,39 @@ def build(
     registry: str,
     image: str,
     containerfile: str,
-    tag: str = COMMIT_SHA,
+    tag: str | None = None,
     no_cache: bool = False,
     build_args: dict[str, str] | None = None,
 ) -> None:
-    args_string = f"--build-arg TOOLS_REGISTRY={TOOLS_REGISTRY} "
+    if tag is None:
+        tag = get_commit_sha()
+    build_args_list = [f"--build-arg TOOLS_REGISTRY={TOOLS_REGISTRY}"]
 
     if build_args:
-        args_string += " ".join(f"--build-arg {key}={value}" for key, value in build_args.items())
+        build_args_list.extend(f"--build-arg {key}={value}" for key, value in build_args.items())
 
-    no_cache_str = "--no-cache" if no_cache else ""
+    no_cache_flag = "--no-cache" if no_cache else ""
+
+    image_ref = f"{registry}/{image}:{tag}"
+
+    cmd_parts = [
+        "podman",
+        "build",
+        "--pull",
+        "--file",
+        shlex.quote(containerfile),
+        *build_args_list,
+    ]
+
+    if no_cache_flag:
+        cmd_parts.append(no_cache_flag)
+
+    cmd_parts.extend(["--tag", shlex.quote(image_ref), "."])
+
+    command = " ".join(cmd_parts)
 
     with c.cd(BUILD_DIR):
-        c.run(f"""
-            podman build --pull --file {containerfile} {args_string} {no_cache_str} \
-                --tag {registry}/{image}:{tag}
-            """)
+        c.run(command)
 
 
 @task
@@ -68,32 +88,50 @@ def build_ubuntu(c: Context, no_cache: bool = False) -> None:
 
 @task
 def test(c: Context, image: str, verbose: bool = False) -> None:
-    c.run(f"""
-    podman run --rm -v {TEST_DIR}:/test:z {image} \
-        bats {"--verbose-run" if verbose else ""} /test
-    """)
+    test_dir = shlex.quote(str(TEST_DIR))
+    image_ref = shlex.quote(image)
+    verbose_flag = "--verbose-run" if verbose else ""
+
+    cmd_parts = [
+        "podman",
+        "run",
+        "--rm",
+        "-v",
+        f"{test_dir}:/test:z",
+        image_ref,
+        "bats",
+    ]
+
+    if verbose_flag:
+        cmd_parts.append(verbose_flag)
+
+    cmd_parts.append("/test")
+
+    c.run(" ".join(cmd_parts))
 
 
 @task
 def test_fedora(c: Context, verbose: bool = False) -> None:
-    test(c, image=f"localhost/fedora-toolbox:{COMMIT_SHA}", verbose=verbose)
+    test(c, image=f"localhost/fedora-toolbox:{get_commit_sha()}", verbose=verbose)
 
 
 @task
 def test_ubuntu(c: Context, verbose: bool = False) -> None:
-    test(c, image=f"localhost/ubuntu-toolbox:{COMMIT_SHA}", verbose=verbose)
+    test(c, image=f"localhost/ubuntu-toolbox:{get_commit_sha()}", verbose=verbose)
 
 
 @task
 def save(c: Context, image: str, tag: str, localhost: bool = False, force: bool = True) -> None:
     registry = "localhost" if localhost else DESTINATION_REGISTRY
-    out_file = Path(f"{DIST_DIR}/registry/{image}-{tag}.tar")
+    out_file = Path(DIST_DIR) / "registry" / f"{image}-{tag}.tar"
 
-    if force:
-        c.run(f"rm -rfv {out_file}")
+    if force and out_file.exists():
+        out_file.unlink()
 
-    c.run(f"mkdir -p {Path(out_file).parent}")
-    c.run(f"podman image save {registry}/{image}:{tag} -o {out_file}")
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+
+    image_ref = f"{registry}/{image}:{tag}"
+    c.run(f"podman image save {shlex.quote(image_ref)} -o {shlex.quote(str(out_file))}")
 
 
 @task
@@ -109,7 +147,9 @@ def save_ubuntu(c: Context, localhost: bool = False) -> None:
 @task
 def tag(c: Context, image: str, tag: str, localhost: bool = False) -> None:
     registry = "localhost" if localhost else DESTINATION_REGISTRY
-    c.run(f"podman tag localhost/{image}:{COMMIT_SHA} {registry}/{image}:{tag}")
+    source = f"localhost/{image}:{get_commit_sha()}"
+    destination = f"{registry}/{image}:{tag}"
+    c.run(f"podman tag {shlex.quote(source)} {shlex.quote(destination)}")
 
 
 @task
@@ -138,11 +178,14 @@ def push_ubuntu(c: Context) -> None:
 
 
 @task
-def create_toolbox(c: Context, image: str, registry: str, tag: str = COMMIT_SHA) -> None:
+def create_toolbox(c: Context, image: str, registry: str, tag: str | None = None) -> None:
+    if tag is None:
+        tag = get_commit_sha()
+
     toolbox_container_name = f"{image}-{tag}"
-    c.run(f"podman stop {toolbox_container_name} || true")
-    c.run(f"toolbox rm {toolbox_container_name} || true")
-    c.run(f"toolbox create -i {registry}/{image}:{tag}")
+    c.run(f"toolbox rm -f {shlex.quote(toolbox_container_name)}", warn=True)
+    image_ref = f"{registry}/{image}:{tag}"
+    c.run(f"toolbox create -i {shlex.quote(image_ref)}")
 
 
 @task
