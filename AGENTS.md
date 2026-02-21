@@ -4,7 +4,9 @@ Guidelines for automated coding agents and contributors working in this reposito
 
 ## Purpose
 
-This project hosts container configurations and related tooling. Agents should prioritize safety, reproducibility, and minimal disruption to existing developer workflows.
+This project hosts container configurations and related tooling.
+Agents should prioritize safety, reproducibility, and minimal disruption to
+existing developer workflows.
 
 ## Core Principles
 
