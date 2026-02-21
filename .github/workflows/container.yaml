@@ -65,6 +65,10 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Create virtual environment via uv
+        run: |
+          uv venv
+
       - name: Install Python dependencies via uv
         run: |
           uv pip install invoke python-dotenv
