@@ -1,13 +1,26 @@
 # ruff: noqa: PT028
+from datetime import UTC, datetime
 import os
 from pathlib import Path
 import shlex
 import subprocess
 
 from dotenv import load_dotenv
-from invoke import Context, task
+from invoke.context import Context
+from invoke.tasks import task
 
 from config import BUILD_DIR, DIST_DIR, TEST_DIR
+
+load_dotenv()
+
+FEDORA_VERSION = os.getenv("FEDORA_VERSION", "43")
+UBUNTU_VERSION = os.getenv("UBUNTU_VERSION", "24.04")
+DESTINATION_REGISTRY = os.getenv("DESTINATION_REGISTRY", "localhost")
+TOOLS_REGISTRY = os.getenv("TOOLS_REGISTRY", "localhost")
+IMAGE_NAMESPACE = os.getenv("IMAGE_NAMESPACE")
+OCI_SOURCE_URL = os.getenv("OCI_SOURCE_URL")
+
+USE_COLOR = True
 
 
 def detect_runtime(requested: str | None = None) -> str:
@@ -37,17 +50,6 @@ def detect_runtime(requested: str | None = None) -> str:
     raise RuntimeError("Neither podman nor docker found on system.")
 
 
-load_dotenv()
-
-FEDORA_VERSION = os.getenv("FEDORA_VERSION", "43")
-UBUNTU_VERSION = os.getenv("UBUNTU_VERSION", "24.04")
-DESTINATION_REGISTRY = os.getenv("DESTINATION_REGISTRY", "localhost")
-TOOLS_REGISTRY = os.getenv("TOOLS_REGISTRY", "localhost")
-
-
-USE_COLOR = True
-
-
 def info(msg: str) -> None:
     if USE_COLOR:
         print(f"\033[1;34m==>\033[0m {msg}")
@@ -66,28 +68,158 @@ def get_commit_sha() -> str:
     return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
 
 
+def get_git_context() -> dict[str, str | None]:
+    short_sha = get_commit_sha()
+
+    try:
+        branch = subprocess.check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], text=True
+        ).strip()
+        if branch == "HEAD":
+            branch = None
+    except subprocess.CalledProcessError:
+        branch = None
+
+    try:
+        git_tag = subprocess.check_output(
+            ["git", "describe", "--tags", "--exact-match"], text=True
+        ).strip()
+    except subprocess.CalledProcessError:
+        git_tag = None
+
+    try:
+        remote_url = subprocess.check_output(
+            ["git", "remote", "get-url", "origin"], text=True
+        ).strip()
+    except subprocess.CalledProcessError:
+        remote_url = None
+
+    return {
+        "short_sha": short_sha,
+        "branch": branch,
+        "git_tag": git_tag,
+        "remote_url": remote_url,
+    }
+
+
+def resolve_namespace(remote_url: str | None) -> str:
+    if IMAGE_NAMESPACE:
+        return IMAGE_NAMESPACE
+
+    if not remote_url:
+        raise RuntimeError(
+            "IMAGE_NAMESPACE not set and could not determine namespace from git remote."
+        )
+
+    if remote_url.startswith("git@"):
+        path = remote_url.split(":", 1)[1]
+    elif remote_url.startswith("http"):
+        path = remote_url.split("/", 3)[-1]
+    else:
+        raise RuntimeError(f"Unsupported remote URL format: {remote_url}")
+
+    owner = path.split("/", 1)[0]
+    return owner
+
+
+def sanitize_tag(value: str) -> str:
+    return value.replace("/", "-")
+
+
+def generate_metadata(
+    registry: str,
+    image: str,
+    version_tag: str | None = None,
+) -> tuple[list[str], dict[str, str]]:
+    ctx = get_git_context()
+    namespace = resolve_namespace(ctx["remote_url"])
+
+    base = f"{registry}/{namespace}/{image}"
+
+    tags: list[str] = []
+
+    short_sha = ctx["short_sha"]
+    tags.append(f"{base}:{short_sha}")
+
+    branch = ctx["branch"]
+    git_tag = ctx["git_tag"]
+
+    if branch:
+        tags.append(f"{base}:{sanitize_tag(branch)}")
+
+    if git_tag:
+        tags.append(f"{base}:{git_tag}")
+
+    if branch == "main" and version_tag:
+        tags.append(f"{base}:{version_tag}")
+
+    created = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    source = OCI_SOURCE_URL or ctx["remote_url"] or ""
+
+    version = git_tag or version_tag or short_sha
+    ref_name = git_tag or branch or short_sha
+
+    labels = {
+        "org.opencontainers.image.revision": short_sha,
+        "org.opencontainers.image.source": source,
+        "org.opencontainers.image.created": created,
+        "org.opencontainers.image.version": version,
+        "org.opencontainers.image.ref.name": ref_name,
+    }
+
+    return tags, labels
+
+
+def image_exists(runtime: str, image_ref: str) -> bool:
+    return (
+        subprocess.run(
+            [runtime, "image", "inspect", image_ref],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode
+        == 0
+    )
+
+
 @task
 def build(
     c: Context,
-    registry: str,
-    image: str,
-    containerfile: str,
+    registry: str = DESTINATION_REGISTRY,
+    image: str = "",
+    containerfile: str = "Containerfile",
     tag: str | None = None,
     no_cache: bool = False,
     build_args: dict[str, str] | None = None,
+    metadata: bool = True,
+    skip_if_exists: bool = True,
+    version_tag: str | None = None,
 ) -> None:
-    if tag is None:
-        tag = get_commit_sha()
-    build_args_list = [f"--build-arg TOOLS_REGISTRY={TOOLS_REGISTRY}"]
+    runtime = detect_runtime()
 
+    build_args_list = [f"--build-arg TOOLS_REGISTRY={TOOLS_REGISTRY}"]
     if build_args:
         build_args_list.extend(f"--build-arg {key}={value}" for key, value in build_args.items())
 
     no_cache_flag = "--no-cache" if no_cache else ""
 
-    image_ref = f"{registry}/{image}:{tag}"
+    tags: list[str]
+    labels: dict[str, str]
 
-    runtime = detect_runtime()
+    if metadata:
+        tags, labels = generate_metadata(registry, image, version_tag)
+    else:
+        if tag is None:
+            tag = get_commit_sha()
+        tags = [f"{registry}/{image}:{tag}"]
+        labels = {}
+
+    sha_ref = tags[0]
+
+    if skip_if_exists and image_exists(runtime, sha_ref):
+        info(f"Image {sha_ref} exists. Retagging additional tags.")
+        for ref in tags[1:]:
+            c.run(f"{runtime} tag {shlex.quote(sha_ref)} {shlex.quote(ref)}")
+        return
 
     cmd_parts = [
         runtime,
@@ -98,10 +230,16 @@ def build(
         *build_args_list,
     ]
 
+    for key, value in labels.items():
+        cmd_parts.extend(["--label", f"{key}={value}"])
+
+    for ref in tags:
+        cmd_parts.extend(["--tag", shlex.quote(ref)])
+
     if no_cache_flag:
         cmd_parts.append(no_cache_flag)
 
-    cmd_parts.extend(["--tag", shlex.quote(image_ref), "."])
+    cmd_parts.append(".")
 
     command = " ".join(cmd_parts)
 
@@ -113,11 +251,14 @@ def build(
 def build_fedora(c: Context, no_cache: bool = False) -> None:
     build(
         c,
-        registry="localhost",
+        registry=DESTINATION_REGISTRY,
         image="fedora-toolbox",
         containerfile="Containerfile",
         build_args={"FEDORA_VERSION": FEDORA_VERSION},
         no_cache=no_cache,
+        metadata=True,
+        skip_if_exists=True,
+        version_tag=FEDORA_VERSION,
     )
 
 
@@ -125,11 +266,14 @@ def build_fedora(c: Context, no_cache: bool = False) -> None:
 def build_ubuntu(c: Context, no_cache: bool = False) -> None:
     build(
         c,
-        registry="localhost",
+        registry=DESTINATION_REGISTRY,
         image="ubuntu-toolbox",
         containerfile="Containerfile.ubuntu",
         build_args={"UBUNTU_VERSION": UBUNTU_VERSION},
         no_cache=no_cache,
+        metadata=True,
+        skip_if_exists=True,
+        version_tag=UBUNTU_VERSION,
     )
 
 
@@ -142,18 +286,12 @@ def test(
     no_build: bool = False,
     no_color: bool = False,
 ) -> None:
-    """
-    Build image (if SHA-tagged image missing) and run Bats inside container.
-    Supports podman (default) with docker fallback.
-    """
-
     global USE_COLOR
     USE_COLOR = not no_color
 
     if "CI" in os.environ:
         USE_COLOR = False
 
-    # Determine runtime
     runtime = detect_runtime(runtime)
 
     info(f"Using container runtime: {runtime}")
@@ -162,8 +300,7 @@ def test(
     image_ref = shlex.quote(image)
     verbose_flag = "--verbose-run" if verbose else ""
 
-    # Check if exact tagged image exists
-    image_exists = (
+    image_exists_flag = (
         subprocess.run(
             [runtime, "image", "inspect", image],
             stdout=subprocess.DEVNULL,
@@ -172,7 +309,7 @@ def test(
         == 0
     )
 
-    if not image_exists:
+    if not image_exists_flag:
         if no_build:
             raise RuntimeError(f"Image {image} not found and --no-build specified.")
 
@@ -211,12 +348,24 @@ def test(
 
 @task
 def test_fedora(c: Context, verbose: bool = False) -> None:
-    test(c, image=f"localhost/fedora-toolbox:{get_commit_sha()}", verbose=verbose)
+    namespace = IMAGE_NAMESPACE or resolve_namespace(get_git_context()["remote_url"])
+    image_ref = f"{DESTINATION_REGISTRY}/{namespace}/fedora-toolbox:{get_commit_sha()}"
+    test(
+        c,
+        image=image_ref,
+        verbose=verbose,
+    )
 
 
 @task
 def test_ubuntu(c: Context, verbose: bool = False) -> None:
-    test(c, image=f"localhost/ubuntu-toolbox:{get_commit_sha()}", verbose=verbose)
+    namespace = IMAGE_NAMESPACE or resolve_namespace(get_git_context()["remote_url"])
+    image_ref = f"{DESTINATION_REGISTRY}/{namespace}/ubuntu-toolbox:{get_commit_sha()}"
+    test(
+        c,
+        image=image_ref,
+        verbose=verbose,
+    )
 
 
 @task
@@ -243,106 +392,51 @@ def save(
 
 
 @task
-def save_fedora(c: Context, localhost: bool = False) -> None:
-    save(c, image="fedora-toolbox", tag=FEDORA_VERSION, localhost=localhost)
-
-
-@task
-def save_ubuntu(c: Context, localhost: bool = False) -> None:
-    save(c, image="ubuntu-toolbox", tag=UBUNTU_VERSION, localhost=localhost)
-
-
-@task
-def tag(
-    c: Context,
-    image: str,
-    tag: str,
-    localhost: bool = False,
-    runtime: str | None = None,
-) -> None:
-    runtime = detect_runtime(runtime)
-
-    registry = "localhost" if localhost else DESTINATION_REGISTRY
-    source = f"localhost/{image}:{get_commit_sha()}"
-    destination = f"{registry}/{image}:{tag}"
-
-    c.run(f"{runtime} tag {shlex.quote(source)} {shlex.quote(destination)}")
-
-
-@task
-def tag_fedora(c: Context, localhost: bool = False) -> None:
-    tag(c, image="fedora-toolbox", tag=FEDORA_VERSION, localhost=localhost)
-
-
-@task
-def tag_ubuntu(c: Context, localhost: bool = False) -> None:
-    tag(c, image="ubuntu-toolbox", tag=UBUNTU_VERSION, localhost=localhost)
-
-
-@task
 def push(
     c: Context,
     image: str,
-    tag: str,
     registry: str = DESTINATION_REGISTRY,
     runtime: str | None = None,
+    version_tag: str | None = None,
 ) -> None:
     runtime = detect_runtime(runtime)
-    c.run(f"{runtime} push {registry}/{image}:{tag}")
+
+    tags, _ = generate_metadata(registry, image, version_tag)
+
+    for ref in tags:
+        info(f"Pushing {ref}")
+        c.run(f"{runtime} push {shlex.quote(ref)}")
 
 
 @task
-def push_fedora(c: Context) -> None:
-    push(c, image="fedora-toolbox", tag=FEDORA_VERSION)
+def release_fedora(
+    c: Context,
+    no_cache: bool = False,
+    skip_tests: bool = False,
+) -> None:
+    build_fedora(c, no_cache=no_cache)
+    if not skip_tests:
+        test_fedora(c)
+    push(
+        c,
+        image="fedora-toolbox",
+        registry=DESTINATION_REGISTRY,
+        version_tag=FEDORA_VERSION,
+    )
 
 
 @task
-def push_ubuntu(c: Context) -> None:
-    push(c, image="ubuntu-toolbox", tag=UBUNTU_VERSION)
-
-
-@task
-def create_toolbox(c: Context, image: str, registry: str, tag: str | None = None) -> None:
-    if tag is None:
-        tag = get_commit_sha()
-
-    toolbox_container_name = f"{image}-{tag}"
-    c.run(f"toolbox rm -f {shlex.quote(toolbox_container_name)}", warn=True)
-    image_ref = f"{registry}/{image}:{tag}"
-    c.run(f"toolbox create -i {shlex.quote(image_ref)}")
-
-
-@task
-def create_fedora_toolbox(c: Context, registry: str = DESTINATION_REGISTRY) -> None:
-    create_toolbox(c, image="fedora-toolbox", registry=registry, tag=FEDORA_VERSION)
-
-
-@task
-def create_ubuntu_toolbox(c: Context, registry: str = DESTINATION_REGISTRY) -> None:
-    create_toolbox(c, image="ubuntu-toolbox", registry=registry, tag=UBUNTU_VERSION)
-
-
-@task(
-    pre=[
-        build_fedora,
-        test_fedora,
-        tag_fedora,
-        save_fedora,
-    ]
-)
-def fedora(c: Context, push: bool = False) -> None:
-    if push:
-        push_fedora(c)
-
-
-@task(
-    pre=[
-        build_ubuntu,
-        test_ubuntu,
-        tag_ubuntu,
-        save_ubuntu,
-    ]
-)
-def ubuntu(c: Context, push: bool = False) -> None:
-    if push:
-        push_ubuntu(c)
+def release_ubuntu(
+    c: Context,
+    no_cache: bool = False,
+    skip_tests: bool = False,
+) -> None:
+    build_ubuntu(c, no_cache=no_cache)
+    if not skip_tests:
+        test_ubuntu(c)
+    push(
+        c,
+        image="ubuntu-toolbox",
+        registry=DESTINATION_REGISTRY,
+        version_tag=UBUNTU_VERSION,
+    )
