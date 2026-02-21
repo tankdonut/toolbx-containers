@@ -7,5 +7,5 @@ load common.sh
 }
 
 @test "test Meslo fonts are installed" {
-	fc-list | grep Meslo
+	fc-list | grep -qi "Meslo"
 }

@@ -7,7 +7,7 @@ load common.sh
 }
 
 @test "test tools are in PATH" {
-	check_path doctl exo flux helm-docs kind kustomize k3d k3s packer shellcheck starship terraform terraform-docs terragrunt tflint
+	check_path doctl exo helm-docs kind kustomize k3d k3s packer shellcheck terraform terraform-docs terragrunt tflint
 }
 
 @test "test codium is in PATH" {

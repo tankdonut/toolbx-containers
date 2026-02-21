@@ -13,3 +13,7 @@ load common.sh
 @test "test pnpm is in PATH" {
 	check_path pnpm
 }
+
+@test "test node executes" {
+	node -e "console.log('ok')"
+}

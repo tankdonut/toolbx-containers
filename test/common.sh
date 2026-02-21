@@ -1,5 +1,5 @@
 function check_path() {
 	for p in "$@"; do
-		command -V "$p" >/dev/null
+		command -v "$p" >/dev/null 2>&1
 	done
 }
