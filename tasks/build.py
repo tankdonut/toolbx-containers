@@ -9,9 +9,37 @@ from invoke import Context, task
 
 from config import BUILD_DIR, DIST_DIR, TEST_DIR
 
+
+def detect_runtime(requested: str | None = None) -> str:
+    if requested:
+        if (
+            subprocess.run(
+                ["which", requested],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ).returncode
+            != 0
+        ):
+            raise RuntimeError(f"Requested runtime '{requested}' not found.")
+        return requested
+
+    for candidate in ["podman", "docker"]:
+        if (
+            subprocess.run(
+                ["which", candidate],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ).returncode
+            == 0
+        ):
+            return candidate
+
+    raise RuntimeError("Neither podman nor docker found on system.")
+
+
 load_dotenv()
 
-FEDORA_VERSION = os.getenv("FEDORA_VERSION", "41")
+FEDORA_VERSION = os.getenv("FEDORA_VERSION", "43")
 UBUNTU_VERSION = os.getenv("UBUNTU_VERSION", "24.04")
 DESTINATION_REGISTRY = os.getenv("DESTINATION_REGISTRY", "localhost")
 TOOLS_REGISTRY = os.getenv("TOOLS_REGISTRY", "localhost")
@@ -214,7 +242,16 @@ def test_ubuntu(c: Context, verbose: bool = False) -> None:
 
 
 @task
-def save(c: Context, image: str, tag: str, localhost: bool = False, force: bool = True) -> None:
+def save(
+    c: Context,
+    image: str,
+    tag: str,
+    localhost: bool = False,
+    force: bool = True,
+    runtime: str | None = None,
+) -> None:
+    runtime = detect_runtime(runtime)
+
     registry = "localhost" if localhost else DESTINATION_REGISTRY
     out_file = Path(DIST_DIR) / "registry" / f"{image}-{tag}.tar"
 
@@ -224,7 +261,7 @@ def save(c: Context, image: str, tag: str, localhost: bool = False, force: bool 
     out_file.parent.mkdir(parents=True, exist_ok=True)
 
     image_ref = f"{registry}/{image}:{tag}"
-    c.run(f"podman image save {shlex.quote(image_ref)} -o {shlex.quote(str(out_file))}")
+    c.run(f"{runtime} image save {shlex.quote(image_ref)} -o {shlex.quote(str(out_file))}")
 
 
 @task
@@ -238,11 +275,20 @@ def save_ubuntu(c: Context, localhost: bool = False) -> None:
 
 
 @task
-def tag(c: Context, image: str, tag: str, localhost: bool = False) -> None:
+def tag(
+    c: Context,
+    image: str,
+    tag: str,
+    localhost: bool = False,
+    runtime: str | None = None,
+) -> None:
+    runtime = detect_runtime(runtime)
+
     registry = "localhost" if localhost else DESTINATION_REGISTRY
     source = f"localhost/{image}:{get_commit_sha()}"
     destination = f"{registry}/{image}:{tag}"
-    c.run(f"podman tag {shlex.quote(source)} {shlex.quote(destination)}")
+
+    c.run(f"{runtime} tag {shlex.quote(source)} {shlex.quote(destination)}")
 
 
 @task
@@ -256,8 +302,15 @@ def tag_ubuntu(c: Context, localhost: bool = False) -> None:
 
 
 @task
-def push(c: Context, image: str, tag: str, registry: str = DESTINATION_REGISTRY) -> None:
-    c.run(f"podman push {registry}/{image}:{tag}")
+def push(
+    c: Context,
+    image: str,
+    tag: str,
+    registry: str = DESTINATION_REGISTRY,
+    runtime: str | None = None,
+) -> None:
+    runtime = detect_runtime(runtime)
+    c.run(f"{runtime} push {registry}/{image}:{tag}")
 
 
 @task
@@ -295,8 +348,8 @@ def create_ubuntu_toolbox(c: Context, registry: str = DESTINATION_REGISTRY) -> N
     pre=[
         build_fedora,
         test_fedora,
-        save_fedora,
         tag_fedora,
+        save_fedora,
     ]
 )
 def fedora(c: Context, push: bool = False) -> None:
@@ -308,8 +361,8 @@ def fedora(c: Context, push: bool = False) -> None:
     pre=[
         build_ubuntu,
         test_ubuntu,
-        save_ubuntu,
         tag_ubuntu,
+        save_ubuntu,
     ]
 )
 def ubuntu(c: Context, push: bool = False) -> None:
