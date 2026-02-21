@@ -17,6 +17,23 @@ DESTINATION_REGISTRY = os.getenv("DESTINATION_REGISTRY", "localhost")
 TOOLS_REGISTRY = os.getenv("TOOLS_REGISTRY", "localhost")
 
 
+USE_COLOR = True
+
+
+def info(msg: str) -> None:
+    if USE_COLOR:
+        print(f"\033[1;34m==>\033[0m {msg}")
+    else:
+        print(f"==> {msg}")
+
+
+def warn_msg(msg: str) -> None:
+    if USE_COLOR:
+        print(f"\033[1;33m==>\033[0m {msg}")
+    else:
+        print(f"==> {msg}")
+
+
 def get_commit_sha() -> str:
     return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
 
@@ -87,17 +104,93 @@ def build_ubuntu(c: Context, no_cache: bool = False) -> None:
 
 
 @task
-def test(c: Context, image: str, verbose: bool = False) -> None:
+def test(
+    c: Context,
+    image: str,
+    verbose: bool = False,
+    runtime: str | None = None,
+    no_build: bool = False,
+    no_color: bool = False,
+) -> None:
+    """
+    Build image (if SHA-tagged image missing) and run Bats inside container.
+    Supports podman (default) with docker fallback.
+    """
+
+    global USE_COLOR
+    USE_COLOR = not no_color
+
+    if "CI" in os.environ:
+        USE_COLOR = False
+
+    # Determine runtime
+    if runtime is None:
+        for candidate in ["podman", "docker"]:
+            if (
+                subprocess.run(
+                    ["which", candidate],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                ).returncode
+                == 0
+            ):
+                runtime = candidate
+                break
+    else:
+        if (
+            subprocess.run(
+                ["which", runtime],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ).returncode
+            != 0
+        ):
+            raise RuntimeError(f"Requested runtime '{runtime}' not found.")
+
+    if runtime is None:
+        raise RuntimeError("Neither podman nor docker found on system.")
+
+    info(f"Using container runtime: {runtime}")
+
     test_dir = shlex.quote(str(TEST_DIR))
     image_ref = shlex.quote(image)
     verbose_flag = "--verbose-run" if verbose else ""
 
+    # Check if exact tagged image exists
+    image_exists = (
+        subprocess.run(
+            [runtime, "image", "inspect", image],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode
+        == 0
+    )
+
+    if not image_exists:
+        if no_build:
+            raise RuntimeError(f"Image {image} not found and --no-build specified.")
+
+        warn_msg(f"Image {image} not found. Building with {runtime}...")
+
+        containerfile = "Containerfile"
+        if "ubuntu" in image:
+            containerfile = "Containerfile.ubuntu"
+
+        build_cmd = f"{runtime} build --pull --file {containerfile} --tag {image} ."
+
+        with c.cd(BUILD_DIR):
+            c.run(build_cmd)
+
+    mount_flag = f"{test_dir}:/test:Z" if runtime == "podman" else f"{test_dir}:/test"
+
+    info(f"Running tests in image: {image}")
+
     cmd_parts = [
-        "podman",
+        runtime,
         "run",
         "--rm",
         "-v",
-        f"{test_dir}:/test:z",
+        mount_flag,
         image_ref,
         "bats",
     ]
