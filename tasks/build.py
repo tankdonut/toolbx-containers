@@ -181,18 +181,23 @@ def image_exists(runtime: str, image_ref: str) -> bool:
     )
 
 
+def _save_image(c: Context, runtime: str, image_ref: str, image: str) -> None:
+    out_file = Path(DIST_DIR) / "registry" / f"{image}-{get_commit_sha()}.tar"
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    c.run(f"{runtime} image save {shlex.quote(image_ref)} -o {shlex.quote(str(out_file))}")
+
+
 @task
 def build(
     c: Context,
     registry: str = DESTINATION_REGISTRY,
     image: str = "",
     containerfile: str = "Containerfile",
-    tag: str | None = None,
     no_cache: bool = False,
     build_args: dict[str, str] | None = None,
-    metadata: bool = True,
     skip_if_exists: bool = True,
     version_tag: str | None = None,
+    save: bool = False,
 ) -> None:
     runtime = detect_runtime()
 
@@ -202,23 +207,15 @@ def build(
 
     no_cache_flag = "--no-cache" if no_cache else ""
 
-    tags: list[str]
-    labels: dict[str, str]
-
-    if metadata:
-        tags, labels = generate_metadata(registry, image, version_tag)
-    else:
-        if tag is None:
-            tag = get_commit_sha()
-        tags = [f"{registry}/{image}:{tag}"]
-        labels = {}
-
+    tags, labels = generate_metadata(registry, image, version_tag)
     sha_ref = tags[0]
 
     if skip_if_exists and image_exists(runtime, sha_ref):
         info(f"Image {sha_ref} exists. Retagging additional tags.")
         for ref in tags[1:]:
             c.run(f"{runtime} tag {shlex.quote(sha_ref)} {shlex.quote(ref)}")
+        if save:
+            _save_image(c, runtime, sha_ref, image)
         return
 
     cmd_parts = [
@@ -246,6 +243,9 @@ def build(
     with c.cd(BUILD_DIR):
         c.run(command)
 
+    if save:
+        _save_image(c, runtime, sha_ref, image)
+
 
 @task
 def build_fedora(c: Context, no_cache: bool = False) -> None:
@@ -256,7 +256,6 @@ def build_fedora(c: Context, no_cache: bool = False) -> None:
         containerfile="Containerfile",
         build_args={"FEDORA_VERSION": FEDORA_VERSION},
         no_cache=no_cache,
-        metadata=True,
         skip_if_exists=True,
         version_tag=FEDORA_VERSION,
     )
@@ -271,7 +270,6 @@ def build_ubuntu(c: Context, no_cache: bool = False) -> None:
         containerfile="Containerfile.ubuntu",
         build_args={"UBUNTU_VERSION": UBUNTU_VERSION},
         no_cache=no_cache,
-        metadata=True,
         skip_if_exists=True,
         version_tag=UBUNTU_VERSION,
     )
@@ -300,29 +298,10 @@ def test(
     image_ref = shlex.quote(image)
     verbose_flag = "--verbose-run" if verbose else ""
 
-    image_exists_flag = (
-        subprocess.run(
-            [runtime, "image", "inspect", image],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        ).returncode
-        == 0
-    )
+    image_exists_flag = image_exists(runtime, image)
 
     if not image_exists_flag:
-        if no_build:
-            raise RuntimeError(f"Image {image} not found and --no-build specified.")
-
-        warn_msg(f"Image {image} not found. Building with {runtime}...")
-
-        containerfile = "Containerfile"
-        if "ubuntu" in image:
-            containerfile = "Containerfile.ubuntu"
-
-        build_cmd = f"{runtime} build --pull --file {containerfile} --tag {image} ."
-
-        with c.cd(BUILD_DIR):
-            c.run(build_cmd)
+        raise RuntimeError(f"Image {image} not found. Run the build task before testing.")
 
     mount_flag = f"{test_dir}:/test:Z" if runtime == "podman" else f"{test_dir}:/test"
 
@@ -366,29 +345,6 @@ def test_ubuntu(c: Context, verbose: bool = False) -> None:
         image=image_ref,
         verbose=verbose,
     )
-
-
-@task
-def save(
-    c: Context,
-    image: str,
-    tag: str,
-    localhost: bool = False,
-    force: bool = True,
-    runtime: str | None = None,
-) -> None:
-    runtime = detect_runtime(runtime)
-
-    registry = "localhost" if localhost else DESTINATION_REGISTRY
-    out_file = Path(DIST_DIR) / "registry" / f"{image}-{tag}.tar"
-
-    if force and out_file.exists():
-        out_file.unlink()
-
-    out_file.parent.mkdir(parents=True, exist_ok=True)
-
-    image_ref = f"{registry}/{image}:{tag}"
-    c.run(f"{runtime} image save {shlex.quote(image_ref)} -o {shlex.quote(str(out_file))}")
 
 
 @task
