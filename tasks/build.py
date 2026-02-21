@@ -87,8 +87,10 @@ def build(
 
     image_ref = f"{registry}/{image}:{tag}"
 
+    runtime = detect_runtime()
+
     cmd_parts = [
-        "podman",
+        runtime,
         "build",
         "--pull",
         "--file",
@@ -152,31 +154,7 @@ def test(
         USE_COLOR = False
 
     # Determine runtime
-    if runtime is None:
-        for candidate in ["podman", "docker"]:
-            if (
-                subprocess.run(
-                    ["which", candidate],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                ).returncode
-                == 0
-            ):
-                runtime = candidate
-                break
-    else:
-        if (
-            subprocess.run(
-                ["which", runtime],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            ).returncode
-            != 0
-        ):
-            raise RuntimeError(f"Requested runtime '{runtime}' not found.")
-
-    if runtime is None:
-        raise RuntimeError("Neither podman nor docker found on system.")
+    runtime = detect_runtime(runtime)
 
     info(f"Using container runtime: {runtime}")
 
