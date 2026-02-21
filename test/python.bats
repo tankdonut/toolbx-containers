@@ -3,7 +3,7 @@
 load common.sh
 
 function check_python_package() {
-	python -c "import $1"
+	uv run python -c "import $1"
 }
 
 @test "test conda is in PATH" {
@@ -19,11 +19,17 @@ function check_python_package() {
 }
 
 @test "test python executes" {
-	python -c "print('ok')"
+	run python -c "print('ok')"
+	[ "$status" -eq 0 ]
 }
 
 @test "test poetry is in PATH" {
 	check_path poetry
+}
+
+@test "test poetry reports version" {
+	run poetry --version
+	[ "$status" -eq 0 ]
 }
 
 @test "test ruff is in PATH" {
@@ -32,6 +38,16 @@ function check_python_package() {
 
 @test "test uv is in PATH" {
 	check_path uv
+}
+
+@test "test uv reports version" {
+	run uv --version
+	[ "$status" -eq 0 ]
+}
+
+@test "test python reports version" {
+	run python --version
+	[ "$status" -eq 0 ]
 }
 
 @test "test invoke python package is installed" {

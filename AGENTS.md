@@ -38,6 +38,14 @@ existing developer workflows.
 - Avoid introducing unnecessary dependencies.
 - Ensure builds remain reproducible and documented.
 
+## Dependency Management
+
+- Python packages are installed and executed via `uv`.
+- When running Python commands in tests or scripts,
+  prefer `uv run python ...` instead of invoking `python` directly.
+- Do not assume system-level Python has project packages installed.
+- Keep dependency resolution deterministic and consistent with the container build configuration.
+
 ## Testing and Validation
 
 - Run relevant build or lint steps before committing when applicable.

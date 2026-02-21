@@ -18,6 +18,20 @@ load common.sh
 	check_path flux
 }
 
+@test "test core tools report versions" {
+	run git --version
+	[ "$status" -eq 0 ]
+
+	run terraform version
+	[ "$status" -eq 0 ]
+
+	run kubectl version --client
+	[ "$status" -eq 0 ]
+
+	run helm version --short
+	[ "$status" -eq 0 ]
+}
+
 @test "test jq is in PATH" {
 	check_path jq
 }

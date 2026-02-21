@@ -9,12 +9,57 @@ from invoke import Context, task
 
 from config import BUILD_DIR, DIST_DIR, TEST_DIR
 
+
+def detect_runtime(requested: str | None = None) -> str:
+    if requested:
+        if (
+            subprocess.run(
+                ["which", requested],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ).returncode
+            != 0
+        ):
+            raise RuntimeError(f"Requested runtime '{requested}' not found.")
+        return requested
+
+    for candidate in ["podman", "docker"]:
+        if (
+            subprocess.run(
+                ["which", candidate],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ).returncode
+            == 0
+        ):
+            return candidate
+
+    raise RuntimeError("Neither podman nor docker found on system.")
+
+
 load_dotenv()
 
-FEDORA_VERSION = os.getenv("FEDORA_VERSION", "41")
+FEDORA_VERSION = os.getenv("FEDORA_VERSION", "43")
 UBUNTU_VERSION = os.getenv("UBUNTU_VERSION", "24.04")
 DESTINATION_REGISTRY = os.getenv("DESTINATION_REGISTRY", "localhost")
 TOOLS_REGISTRY = os.getenv("TOOLS_REGISTRY", "localhost")
+
+
+USE_COLOR = True
+
+
+def info(msg: str) -> None:
+    if USE_COLOR:
+        print(f"\033[1;34m==>\033[0m {msg}")
+    else:
+        print(f"==> {msg}")
+
+
+def warn_msg(msg: str) -> None:
+    if USE_COLOR:
+        print(f"\033[1;33m==>\033[0m {msg}")
+    else:
+        print(f"==> {msg}")
 
 
 def get_commit_sha() -> str:
@@ -87,17 +132,93 @@ def build_ubuntu(c: Context, no_cache: bool = False) -> None:
 
 
 @task
-def test(c: Context, image: str, verbose: bool = False) -> None:
+def test(
+    c: Context,
+    image: str,
+    verbose: bool = False,
+    runtime: str | None = None,
+    no_build: bool = False,
+    no_color: bool = False,
+) -> None:
+    """
+    Build image (if SHA-tagged image missing) and run Bats inside container.
+    Supports podman (default) with docker fallback.
+    """
+
+    global USE_COLOR
+    USE_COLOR = not no_color
+
+    if "CI" in os.environ:
+        USE_COLOR = False
+
+    # Determine runtime
+    if runtime is None:
+        for candidate in ["podman", "docker"]:
+            if (
+                subprocess.run(
+                    ["which", candidate],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                ).returncode
+                == 0
+            ):
+                runtime = candidate
+                break
+    else:
+        if (
+            subprocess.run(
+                ["which", runtime],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ).returncode
+            != 0
+        ):
+            raise RuntimeError(f"Requested runtime '{runtime}' not found.")
+
+    if runtime is None:
+        raise RuntimeError("Neither podman nor docker found on system.")
+
+    info(f"Using container runtime: {runtime}")
+
     test_dir = shlex.quote(str(TEST_DIR))
     image_ref = shlex.quote(image)
     verbose_flag = "--verbose-run" if verbose else ""
 
+    # Check if exact tagged image exists
+    image_exists = (
+        subprocess.run(
+            [runtime, "image", "inspect", image],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode
+        == 0
+    )
+
+    if not image_exists:
+        if no_build:
+            raise RuntimeError(f"Image {image} not found and --no-build specified.")
+
+        warn_msg(f"Image {image} not found. Building with {runtime}...")
+
+        containerfile = "Containerfile"
+        if "ubuntu" in image:
+            containerfile = "Containerfile.ubuntu"
+
+        build_cmd = f"{runtime} build --pull --file {containerfile} --tag {image} ."
+
+        with c.cd(BUILD_DIR):
+            c.run(build_cmd)
+
+    mount_flag = f"{test_dir}:/test:Z" if runtime == "podman" else f"{test_dir}:/test"
+
+    info(f"Running tests in image: {image}")
+
     cmd_parts = [
-        "podman",
+        runtime,
         "run",
         "--rm",
         "-v",
-        f"{test_dir}:/test:z",
+        mount_flag,
         image_ref,
         "bats",
     ]
@@ -121,7 +242,16 @@ def test_ubuntu(c: Context, verbose: bool = False) -> None:
 
 
 @task
-def save(c: Context, image: str, tag: str, localhost: bool = False, force: bool = True) -> None:
+def save(
+    c: Context,
+    image: str,
+    tag: str,
+    localhost: bool = False,
+    force: bool = True,
+    runtime: str | None = None,
+) -> None:
+    runtime = detect_runtime(runtime)
+
     registry = "localhost" if localhost else DESTINATION_REGISTRY
     out_file = Path(DIST_DIR) / "registry" / f"{image}-{tag}.tar"
 
@@ -131,7 +261,7 @@ def save(c: Context, image: str, tag: str, localhost: bool = False, force: bool 
     out_file.parent.mkdir(parents=True, exist_ok=True)
 
     image_ref = f"{registry}/{image}:{tag}"
-    c.run(f"podman image save {shlex.quote(image_ref)} -o {shlex.quote(str(out_file))}")
+    c.run(f"{runtime} image save {shlex.quote(image_ref)} -o {shlex.quote(str(out_file))}")
 
 
 @task
@@ -145,11 +275,20 @@ def save_ubuntu(c: Context, localhost: bool = False) -> None:
 
 
 @task
-def tag(c: Context, image: str, tag: str, localhost: bool = False) -> None:
+def tag(
+    c: Context,
+    image: str,
+    tag: str,
+    localhost: bool = False,
+    runtime: str | None = None,
+) -> None:
+    runtime = detect_runtime(runtime)
+
     registry = "localhost" if localhost else DESTINATION_REGISTRY
     source = f"localhost/{image}:{get_commit_sha()}"
     destination = f"{registry}/{image}:{tag}"
-    c.run(f"podman tag {shlex.quote(source)} {shlex.quote(destination)}")
+
+    c.run(f"{runtime} tag {shlex.quote(source)} {shlex.quote(destination)}")
 
 
 @task
@@ -163,8 +302,15 @@ def tag_ubuntu(c: Context, localhost: bool = False) -> None:
 
 
 @task
-def push(c: Context, image: str, tag: str, registry: str = DESTINATION_REGISTRY) -> None:
-    c.run(f"podman push {registry}/{image}:{tag}")
+def push(
+    c: Context,
+    image: str,
+    tag: str,
+    registry: str = DESTINATION_REGISTRY,
+    runtime: str | None = None,
+) -> None:
+    runtime = detect_runtime(runtime)
+    c.run(f"{runtime} push {registry}/{image}:{tag}")
 
 
 @task
@@ -202,8 +348,8 @@ def create_ubuntu_toolbox(c: Context, registry: str = DESTINATION_REGISTRY) -> N
     pre=[
         build_fedora,
         test_fedora,
-        save_fedora,
         tag_fedora,
+        save_fedora,
     ]
 )
 def fedora(c: Context, push: bool = False) -> None:
@@ -215,8 +361,8 @@ def fedora(c: Context, push: bool = False) -> None:
     pre=[
         build_ubuntu,
         test_ubuntu,
-        save_ubuntu,
         tag_ubuntu,
+        save_ubuntu,
     ]
 )
 def ubuntu(c: Context, push: bool = False) -> None:

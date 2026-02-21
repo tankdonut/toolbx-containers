@@ -14,6 +14,12 @@ load common.sh
 	check_path pnpm
 }
 
+@test "test node reports version" {
+	run node --version
+	[ "$status" -eq 0 ]
+}
+
 @test "test node executes" {
-	node -e "console.log('ok')"
+	run node -e "console.log('ok')"
+	[ "$status" -eq 0 ]
 }
