@@ -17,7 +17,18 @@ export EDITOR
 
 # shell
 
-SHELL="$(which "$(ps -p $$ | awk '/zsh|bash/ {print $4}')")"
+# Determine the shell executing this profile safely
+if [ -n "$BASH_VERSION" ]; then
+	SHELL="$(command -v bash)"
+elif [ -n "$ZSH_VERSION" ]; then
+	SHELL="$(command -v zsh)"
+else
+	# Fallback to the actual process executable
+	if [ -r "/proc/$$/exe" ]; then
+		SHELL="$(readlink -f /proc/$$/exe 2>/dev/null || true)"
+	fi
+	: "${SHELL:=/bin/sh}"
+fi
 
 export SHELL
 
@@ -69,6 +80,12 @@ export NODE_REPL_HISTORY
 NPM_CONFIG_USERCONFIG="${XDG_CONFIG_HOME}/npm/npmrc"
 
 export NPM_CONFIG_USERCONFIG
+
+# opencode
+
+OPENCODE_CONFIG="/etc/opencode"
+
+export OPENCODE_CONFIG
 
 # python
 

@@ -1,0 +1,19 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+
+    // Example user override configuration.
+    // Copy this file to:
+    //   $XDG_CONFIG_HOME/opencode/opencode.jsonc
+
+    "theme": "github-dark",
+
+    "network": {
+        "enabled": true,
+        "requireConfirmation": false
+    },
+
+    "execution": {
+        "allowDestructiveCommands": false,
+        "requireConfirmation": true
+    }
+}
