@@ -117,3 +117,36 @@ Key expectations:
 
 This repository is intended to support a stable and reproducible Toolbx-based
 development workflow.
+
+## OpenCode Defaults
+
+This image provides a system-level OpenCode configuration at:
+
+`/etc/opencode/opencode.jsonc`
+
+The profile script `build/rootfs/etc/profile.d/01-variables.sh` exports:
+
+`OPENCODE_CONFIG=/etc/opencode`
+
+### Default Behavior
+
+- Theme: `github`
+- Destructive commands disabled
+- Confirmation required for execution actions
+- Network enabled but confirmation-gated
+- Plain output wrapped at 100 characters
+- Editor integration via `$EDITOR`
+
+These defaults balance developer convenience with secure-by-default behavior.
+
+## User Overrides
+
+Users may override the system configuration by creating:
+
+`$XDG_CONFIG_HOME/opencode/opencode.jsonc`
+
+User configuration takes precedence over `/etc/opencode`.
+
+An example override template is provided at:
+
+`build/rootfs/etc/skel/.config/opencode/opencode.jsonc.example`

@@ -1,0 +1,23 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "theme": "github",
+
+    "execution": {
+        "allowDestructiveCommands": false,
+        "requireConfirmation": true
+    },
+
+    "network": {
+        "enabled": true,
+        "requireConfirmation": true
+    },
+
+    "output": {
+        "format": "plain",
+        "wrap": 100
+    },
+
+    "editor": {
+        "command": "${EDITOR}"
+    }
+}
