@@ -26,5 +26,11 @@
             "dist/**",
             "build/**"
         ]
-    }
+    },
+
+    "instructions": [
+        "AGENTS.md"
+    ],
+
+    "default_agent": "build"
 }
