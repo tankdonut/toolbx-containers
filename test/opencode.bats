@@ -1,5 +1,10 @@
 #!/usr/bin/env bats
 
+setup() {
+    # Load system profile so /etc/profile.d scripts are sourced
+    source /etc/profile
+}
+
 @test "OPENCODE_CONFIG is set correctly" {
     [ "$OPENCODE_CONFIG" = "/etc/opencode" ]
 }
