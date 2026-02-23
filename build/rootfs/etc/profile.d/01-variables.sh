@@ -17,13 +17,17 @@ export EDITOR
 
 # shell
 
-# Determine preferred interactive shell safely
-if command -v bash >/dev/null 2>&1; then
+# Determine the shell executing this profile safely
+if [ -n "$BASH_VERSION" ]; then
 	SHELL="$(command -v bash)"
-elif command -v zsh >/dev/null 2>&1; then
+elif [ -n "$ZSH_VERSION" ]; then
 	SHELL="$(command -v zsh)"
 else
-	SHELL="/bin/sh"
+	# Fallback to the actual process executable
+	if [ -r "/proc/$$/exe" ]; then
+		SHELL="$(readlink -f /proc/$$/exe 2>/dev/null || true)"
+	fi
+	: "${SHELL:=/bin/sh}"
 fi
 
 export SHELL
