@@ -53,6 +53,7 @@ gstreamer1-plugin-openh264
 hadolint
 host-spawn
 ImageMagick
+icu
 jq
 just
 libpq
