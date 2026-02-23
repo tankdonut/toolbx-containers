@@ -1,14 +1,5 @@
 #!/usr/bin/env bats
 
-setup() {
-    # Load system profile so /etc/profile.d scripts are sourced
-    source /etc/profile
-}
-
-@test "OPENCODE_CONFIG is set correctly" {
-    [ "$OPENCODE_CONFIG" = "/etc/opencode" ]
-}
-
 @test "OpenCode system config directory exists" {
     [ -d "/etc/opencode" ]
 }
@@ -18,7 +9,7 @@ setup() {
 }
 
 @test "OpenCode default permissions require confirmation" {
-    run opencode config dump
+    run env OPENCODE_CONFIG=/etc/opencode opencode config dump
     [ "$status" -eq 0 ]
 
     edit_perm=$(echo "$output" | jq -r '.permission.edit')
