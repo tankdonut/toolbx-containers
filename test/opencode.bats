@@ -9,12 +9,12 @@
 }
 
 @test "OpenCode default permissions require confirmation" {
-    run env OPENCODE_CONFIG=/etc/opencode opencode config dump
-    [ "$status" -eq 0 ]
+    # Strip // comments because jq does not support JSONC
+    config="$(sed 's://.*$::' /etc/opencode/opencode.jsonc)"
 
-    edit_perm=$(echo "$output" | jq -r '.permission.edit')
-    write_perm=$(echo "$output" | jq -r '.permission.write')
-    bash_perm=$(echo "$output" | jq -r '.permission.bash')
+    edit_perm=$(echo "$config" | jq -r '.permission.edit')
+    write_perm=$(echo "$config" | jq -r '.permission.write')
+    bash_perm=$(echo "$config" | jq -r '.permission.bash')
 
     [ "$edit_perm" = "ask" ]
     [ "$write_perm" = "ask" ]
