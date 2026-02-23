@@ -9,12 +9,12 @@
 }
 
 @test "OpenCode default permissions require confirmation" {
-    # Parse JSONC safely using Node to strip line comments before jq
+    # Parse JSONC safely by evaluating it as a JS object literal in Node
     config="$(node -e '
         const fs = require("fs");
         const content = fs.readFileSync("/etc/opencode/opencode.jsonc", "utf8");
-        const stripped = content.replace(/\/\/.*$/gm, "");
-        console.log(stripped);
+        const parsed = Function("return " + content)();
+        console.log(JSON.stringify(parsed));
     ')"
 
     edit_perm=$(echo "$config" | jq -r '.permission.edit')
