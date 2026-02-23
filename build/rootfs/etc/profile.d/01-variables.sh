@@ -17,7 +17,14 @@ export EDITOR
 
 # shell
 
-SHELL="$(which "$(ps -p $$ | awk '/zsh|bash/ {print $4}')")"
+# Determine preferred interactive shell safely
+if command -v bash >/dev/null 2>&1; then
+	SHELL="$(command -v bash)"
+elif command -v zsh >/dev/null 2>&1; then
+	SHELL="$(command -v zsh)"
+else
+	SHELL="/bin/sh"
+fi
 
 export SHELL
 
