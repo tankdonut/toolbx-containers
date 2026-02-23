@@ -70,6 +70,12 @@ NPM_CONFIG_USERCONFIG="${XDG_CONFIG_HOME}/npm/npmrc"
 
 export NPM_CONFIG_USERCONFIG
 
+# opencode
+
+OPENCODE_CONFIG="/etc/opencode"
+
+export OPENCODE_CONFIG
+
 # python
 
 PYTHON_HISTORY="/dev/null"

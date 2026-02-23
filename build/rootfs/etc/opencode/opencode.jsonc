@@ -1,23 +1,30 @@
 {
     "$schema": "https://opencode.ai/config.json",
+
     "theme": "github",
 
-    "execution": {
-        "allowDestructiveCommands": false,
-        "requireConfirmation": true
+    "permission": {
+        "edit": "ask",
+        "write": "ask",
+        "bash": "ask"
     },
 
-    "network": {
-        "enabled": true,
-        "requireConfirmation": true
+    "autoupdate": false,
+
+    "share": "manual",
+
+    "compaction": {
+        "auto": true,
+        "prune": true,
+        "reserved": 10000
     },
 
-    "output": {
-        "format": "plain",
-        "wrap": 100
-    },
-
-    "editor": {
-        "command": "${EDITOR}"
+    "watcher": {
+        "ignore": [
+            ".git/**",
+            "node_modules/**",
+            "dist/**",
+            "build/**"
+        ]
     }
 }
