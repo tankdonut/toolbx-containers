@@ -1,36 +1,44 @@
 {
+    // JSON schema for validation and editor support
     "$schema": "https://opencode.ai/config.json",
-
+    // UI theme used by the OpenCode CLI
     "theme": "github",
-
+    // Default permission policy for tool usage
+    // "ask" prompts before executing the action
     "permission": {
         "edit": "ask",
         "write": "ask",
         "bash": "ask"
     },
-
+    // Disable automatic self-updates inside the container
     "autoupdate": false,
-
+    // Sharing behavior for sessions (manual = explicit user action required)
     "share": "manual",
-
+    // Conversation compaction settings to manage context size
     "compaction": {
+        // Automatically compact long conversations
         "auto": true,
+        // Remove low-value messages during compaction
         "prune": true,
+        // Tokens reserved to avoid exceeding model context limits
         "reserved": 10000
     },
-
+    // File watcher configuration for workspace awareness
     "watcher": {
         "ignore": [
+            // Ignore VCS metadata
             ".git/**",
+            // Ignore dependency directories
             "node_modules/**",
+            // Ignore build outputs
             "dist/**",
             "build/**"
         ]
     },
-
+    // Additional instruction files loaded into the agent context
     "instructions": [
         "AGENTS.md"
     ],
-
+    // Default agent profile to use when none is specified
     "default_agent": "build"
 }
