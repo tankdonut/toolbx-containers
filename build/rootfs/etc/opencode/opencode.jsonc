@@ -1,5 +1,6 @@
+// OpenCode system configuration (JSONC)
+// JSON schema for validation and editor support
 {
-    // JSON schema for validation and editor support
     "$schema": "https://opencode.ai/config.json",
     // UI theme used by the OpenCode CLI
     "theme": "github",
