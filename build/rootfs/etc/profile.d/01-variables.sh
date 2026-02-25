@@ -83,7 +83,7 @@ export NPM_CONFIG_USERCONFIG
 
 # opencode
 
-OPENCODE_CONFIG="/etc/opencode"
+OPENCODE_CONFIG="/etc/opencode/opencode.jsonc"
 
 export OPENCODE_CONFIG
 
