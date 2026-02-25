@@ -8,6 +8,17 @@
     [ -f "/etc/opencode/opencode.jsonc" ]
 }
 
+@test "OpenCode config is valid JSONC" {
+    run node -e '
+        const fs = require("fs");
+        const content = fs.readFileSync("/etc/opencode/opencode.jsonc", "utf8");
+        // Evaluate as JS object literal to allow JSONC comments
+        Function("return " + content)();
+    '
+
+    [ "$status" -eq 0 ]
+}
+
 @test "OpenCode default permissions require confirmation" {
     # Parse JSONC safely by evaluating it as a JS object literal in Node
     config="$(node -e '
