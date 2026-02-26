@@ -54,6 +54,7 @@ hadolint
 host-spawn
 ImageMagick
 icu
+libicu76
 jq
 just
 libpq
