@@ -1,12 +1,19 @@
 # AGENTS.md
 
-Guidelines for automated coding agents and contributors working in this repository.
+Guidelines for automated coding agents and contributors working in this
+repository.
 
 ## Purpose
 
 This project hosts container configurations and related tooling.
+
 Agents should prioritize safety, reproducibility, and minimal disruption to
-existing developer workflows.
+existing developer workflows. This file defines how agents are expected to
+behave, what they may change, and how they should communicate those changes.
+
+The structure and recommendations are informed by GitHub's guidance on
+writing effective `AGENTS.md` files:
+<https://github.blog/ai-and-ml/github-copilot/how-to-write-a-great-agents-md-lessons-from-over-2500-repositories/>.
 
 ## Core Principles
 
@@ -14,6 +21,18 @@ existing developer workflows.
 - Be minimal: make the smallest change that solves the problem.
 - Be explicit: document assumptions in commit messages and PR descriptions.
 - Preserve intent: do not revert or reformat unrelated changes.
+- Be scoped: only modify files that are directly relevant to the task.
+
+## Scope of Authority
+
+- Agents may update container configs, package lists, and supporting scripts.
+- Agents may update documentation to reflect actual behavior.
+- Agents must not change base images, image tags, or core build logic without
+  explicit justification in the commit message.
+- Agents must not introduce new external services, network calls, or
+  credentials.
+- Agents must not commit secrets or modify CI settings unless explicitly
+  requested.
 
 ## Editing Rules
 
@@ -22,6 +41,7 @@ existing developer workflows.
 - Maintain existing formatting and style conventions.
 - Use ASCII by default unless the file already requires Unicode.
 - Do not add comments unless they clarify non-obvious behavior.
+- Do not reorganize sections or reorder lists unless required for correctness.
 
 ## Git Workflow
 
@@ -30,6 +50,8 @@ existing developer workflows.
 - Do not force-push to main/master.
 - Stage only relevant files.
 - Write concise commit messages that explain why the change is needed.
+- Reference related issues or context when available.
+- Clearly state any trade-offs or follow-up work in the PR description.
 
 ## Containers and Tooling
 
@@ -37,6 +59,8 @@ existing developer workflows.
 - Keep container builds deterministic.
 - Avoid introducing unnecessary dependencies.
 - Ensure builds remain reproducible and documented.
+- When adding packages, prefer the minimal runtime package over `-devel`
+  variants unless headers or static libraries are required.
 
 ## Dependency Management
 
@@ -51,6 +75,7 @@ existing developer workflows.
 - Run relevant build or lint steps before committing when applicable.
 - If validation cannot be run locally, clearly state what should be verified.
 - Do not ignore failing checks without explanation.
+- For package changes, ensure the container build still succeeds.
 
 ## Security
 
@@ -70,6 +95,7 @@ existing developer workflows.
 
 - Ask for clarification instead of guessing.
 - Prefer reversible changes.
+- Propose a minimal safe default and document the assumption.
 
 ---
 
