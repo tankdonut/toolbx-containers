@@ -60,23 +60,82 @@ toolbox enter
 
 ## Test Suite
 
-Tests are written using
+Tests verify container correctness using
 [Bats](https://github.com/bats-core/bats-core).
 
-They verify:
+They check:
 
 - Required CLI tools are present in `PATH`
 - Language runtimes execute successfully
 - Required fonts and utilities are installed
 
-To run tests:
+Tests run inside the built container, not on the host.
+
+### Running Tests
+
+Use inv tasks to test specific variants:
 
 ```bash
-bats test/
+uv run inv build.test-fedora    # Test Fedora toolbox
+uv run inv build.test-ubuntu    # Test Ubuntu toolbox
+```
+
+These tasks:
+
+1. Verify the image exists (build first if needed)
+2. Mount the test directory into the container
+3. Execute bats inside the container
+
+For advanced options:
+
+```bash
+uv run inv build.test --image ubuntu-toolbox --verbose
 ```
 
 These are smoke tests intended to validate container correctness rather than
 full integration behavior.
+
+## Development Tasks
+
+This project uses [invoke](https://www.pyinvoke.org/) tasks for development workflows.
+
+All tasks require `uv run inv` prefix:
+
+### Build Tasks
+
+```bash
+uv run inv build.build-fedora    # Build Fedora toolbox image
+uv run inv build.build-ubuntu    # Build Ubuntu toolbox image
+uv run inv build.push            # Push image to registry
+uv run inv build.release-fedora  # Build, test, and push Fedora
+uv run inv build.release-ubuntu  # Build, test, and push Ubuntu
+```
+
+### Test Tasks
+
+```bash
+uv run inv build.test-fedora     # Test Fedora toolbox image
+uv run inv build.test-ubuntu     # Test Ubuntu toolbox image
+uv run inv build.test --image ubuntu-toolbox --verbose
+```
+
+### Dev Tasks
+
+```bash
+uv run inv dev.clean             # Remove cache directory
+uv run inv dev.download-fonts    # Download Meslo fonts
+uv run inv dev.get-pypi-version   # Check PyPI package versions
+uv run inv dev.node-modules      # Install node dependencies
+uv run inv dev.pre-commit        # Run pre-commit hooks
+uv run inv dev.python-packages   # Install Python packages
+uv run inv dev.submodules        # Update git submodules
+```
+
+For all available tasks:
+
+```bash
+uv run inv --list
+```
 
 ## Linting and Hooks
 
@@ -99,6 +158,8 @@ Run all hooks manually:
 
 ```bash
 pre-commit run --all-files
+# or
+uv run inv dev.pre-commit
 ```
 
 ## Contributing
