@@ -31,12 +31,12 @@
     edit_perm=$(echo "$config" | jq -r '.permission.edit')
     write_perm=$(echo "$config" | jq -r '.permission.write')
     bash_default=$(echo "$config" | jq -r '.permission.bash["*"]')
-    git_status=$(echo "$config" | jq -r '.permission.bash["git status"]')
-    git_log=$(echo "$config" | jq -r '.permission.bash["git log"]')
-    git_diff=$(echo "$config" | jq -r '.permission.bash["git diff"]')
-    git_show=$(echo "$config" | jq -r '.permission.bash["git show"]')
-    git_branch=$(echo "$config" | jq -r '.permission.bash["git branch"]')
-    git_rev_parse=$(echo "$config" | jq -r '.permission.bash["git rev-parse"]')
+    git_status=$(echo "$config" | jq -r '.permission.bash["git status *"]')
+    git_log=$(echo "$config" | jq -r '.permission.bash["git log *"]')
+    git_diff=$(echo "$config" | jq -r '.permission.bash["git diff *"]')
+    git_show=$(echo "$config" | jq -r '.permission.bash["git show *"]')
+    git_branch=$(echo "$config" | jq -r '.permission.bash["git branch *"]')
+    git_rev_parse=$(echo "$config" | jq -r '.permission.bash["git rev-parse *"]')
 
     [ "$edit_perm" = "ask" ]
     [ "$write_perm" = "ask" ]
