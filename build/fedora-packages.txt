@@ -76,6 +76,7 @@ rpmrebuild
 sqlite-devel
 stow
 tk-devel
+tmux
 util-linux-user
 vim
 vulkan-loader
