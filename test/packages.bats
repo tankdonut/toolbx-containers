@@ -3,7 +3,7 @@
 load common.sh
 
 @test "test fedora packages are in PATH" {
-	check_path 7z bats cargo git hadolint helm kubectl lz4 make nmap stow tmux vim zsh xz
+	check_path 7z bats cargo git hadolint helm kubectl lz4 make nmap rg stow tmux vim zsh xz
 }
 
 @test "test tools are in PATH" {
