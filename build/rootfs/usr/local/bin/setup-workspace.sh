@@ -5,9 +5,20 @@ set -e
 USERNAME=""
 EMAIL=""
 WORKSPACE="${WORKSPACE:-"${HOME}/Development"}"
+FORCE=false
+
+# Parse --force before getopts (long options)
+for arg in "$@"; do
+	case $arg in
+		--force)
+			FORCE=true
+			shift
+			;;
+	esac
+done
 
 function usage() {
-	echo "usage: $0 -u USERNAME -e EMAIL [-w WORKSPACE]"
+	echo "usage: $0 -u USERNAME -e EMAIL [-w WORKSPACE] [--force]"
 	exit 1
 }
 
@@ -60,3 +71,18 @@ git_config gpg.format ssh
 git_config gpg.ssh.allowedsignersfile "${WORKSPACE}/.ssh/allowed_signers"
 git_config core.excludesfile "${WORKSPACE}/.gitignore"
 git_config core.sshcommand "/usr/bin/ssh -i ${WORKSPACE}/.ssh/id_ecdsa"
+
+ZSHRC_PATH="${WORKSPACE}/.zshrc"
+
+if [ "$FORCE" = true ] || [ ! -f "$ZSHRC_PATH" ]; then
+	mkdir -pv "${WORKSPACE}/.zshrc.d"
+
+	cat >"$ZSHRC_PATH" <<'EOF'
+# Load all .sh files from ~/.zshrc.d
+for file in ~/.zshrc.d/*.sh; do
+	[ -f "$file" ] && source "$file"
+done
+EOF
+
+	chmod 0600 "$ZSHRC_PATH"
+fi
