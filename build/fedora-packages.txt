@@ -48,6 +48,7 @@ ffmpeg-devel
 gh
 git
 git-credential-libsecret
+ripgrep
 glibc-static
 gstreamer1-plugin-openh264
 hadolint
