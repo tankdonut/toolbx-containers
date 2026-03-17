@@ -38,8 +38,9 @@ RUN curl -sSL -o /tmp/ngrok.tar.gz "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v
 
 RUN curl -sSL -o /tmp/bun.zip "https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64.zip" && \
     unzip /tmp/bun.zip -d /tmp/bun && \
-    mv /tmp/bun/bun-linux-x64/bun /tmp/bun/bun-linux-x64/bunx /usr/local/bin/ && \
-    chmod +x /usr/local/bin/bun /usr/local/bin/bunx && \
+    mv /tmp/bun/bun-linux-x64/bun /usr/local/bin/ && \
+    chmod +x /usr/local/bin/bun && \
+    ln -s /usr/local/bin/bun /usr/local/bin/bunx && \
     rm -rf /tmp/bun.zip /tmp/bun
 
 RUN ln -sf /usr/local/bin/buildah /usr/bin/host-spawn && \
