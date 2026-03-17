@@ -23,3 +23,16 @@ load common.sh
 	run node -e "console.log('ok')"
 	[ "$status" -eq 0 ]
 }
+
+@test "test bun is in PATH" {
+	check_path bun
+}
+
+@test "test bun reports version" {
+	run bun --version
+	[ "$status" -eq 0 ]
+}
+
+@test "test bunx is in PATH" {
+	check_path bunx
+}
