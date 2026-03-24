@@ -45,7 +45,6 @@
     },
     // OpenCode plugins to load
     "plugin": [
-        "opencode-beads",
         "@tarquinen/opencode-dcp@latest"
     ],
     // Sharing behavior for sessions (manual = explicit user action required)
