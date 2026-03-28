@@ -13,7 +13,7 @@ from config import BUILD_DIR, DIST_DIR, TEST_DIR
 
 load_dotenv()
 
-FEDORA_VERSION = os.getenv("FEDORA_VERSION", "43")
+FEDORA_VERSION = os.getenv("FEDORA_VERSION", "44")
 UBUNTU_VERSION = os.getenv("UBUNTU_VERSION", "24.04")
 DESTINATION_REGISTRY = os.getenv("DESTINATION_REGISTRY", "localhost")
 TOOLS_REGISTRY = os.getenv("TOOLS_REGISTRY", "localhost")
