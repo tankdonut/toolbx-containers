@@ -3,3 +3,4 @@ cache/
 dist/
 .venv/
 .ruff_cache/
+.sisyphus/

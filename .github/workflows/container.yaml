@@ -36,7 +36,7 @@ jobs:
     env:
       DESTINATION_REGISTRY: ghcr.io
       IMAGE_NAMESPACE: ${{ github.repository_owner }}
-      FEDORA_VERSION: "43"
+      FEDORA_VERSION: "44"
       UBUNTU_VERSION: "24.04"
       TOOLS_REGISTRY: ghcr.io/tankdonut
 

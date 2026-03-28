@@ -61,6 +61,9 @@ writing effective `AGENTS.md` files:
 - Ensure builds remain reproducible and documented.
 - When adding packages, prefer the minimal runtime package over `-devel`
   variants unless headers or static libraries are required.
+- When determining package availability for Fedora, use
+  <https://packages.fedoraproject.org/> to verify packages exist for the target
+  Fedora version.
 
 ## Dependency Management
 
