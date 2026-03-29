@@ -49,3 +49,6 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
+
+[tool.uv]
+exclude-newer = "7 days"

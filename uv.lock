@@ -2,6 +2,10 @@ version = 1
 revision = 3
 requires-python = ">=3.13"
 
+[options]
+exclude-newer = "2026-03-22T13:38:32.044982387Z"
+exclude-newer-span = "P7D"
+
 [[package]]
 name = "invoke"
 version = "2.2.1"
