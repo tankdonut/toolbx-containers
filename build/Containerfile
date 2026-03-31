@@ -31,10 +31,6 @@ RUN dnf install -y libxshmfence && \
     dnf install -y codium && \
     dnf clean all
 
-RUN curl -sSL -o /tmp/ngrok.tar.gz "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz" && \
-    tar xzvf /tmp/ngrok.tar.gz -C /usr/local/bin && \
-    rm -rf /tmp/ngrok.tar.gz
-
 RUN curl -sSL -o /tmp/bun.zip "https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64.zip" && \
     unzip /tmp/bun.zip -d /tmp/bun && \
     mv /tmp/bun/bun-linux-x64/bun /usr/local/bin/ && \
