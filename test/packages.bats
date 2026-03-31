@@ -40,10 +40,6 @@ load common.sh
 	check_path librewolf
 }
 
-@test "test ngrok is in PATH" {
-	check_path ngrok
-}
-
 @test "test starship is in PATH" {
 	check_path starship
 }
