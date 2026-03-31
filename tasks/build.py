@@ -16,7 +16,6 @@ load_dotenv()
 FEDORA_VERSION = os.getenv("FEDORA_VERSION", "44")
 UBUNTU_VERSION = os.getenv("UBUNTU_VERSION", "24.04")
 DESTINATION_REGISTRY = os.getenv("DESTINATION_REGISTRY", "localhost")
-TOOLS_REGISTRY = os.getenv("TOOLS_REGISTRY", "localhost")
 IMAGE_NAMESPACE = os.getenv("IMAGE_NAMESPACE")
 OCI_SOURCE_URL = os.getenv("OCI_SOURCE_URL")
 
@@ -201,7 +200,7 @@ def build(
 ) -> None:
     runtime = detect_runtime()
 
-    build_args_list = [f"--build-arg TOOLS_REGISTRY={TOOLS_REGISTRY}"]
+    build_args_list = []
     if build_args:
         build_args_list.extend(f"--build-arg {key}={value}" for key, value in build_args.items())
 
