@@ -131,6 +131,13 @@ uv run inv dev.python-packages   # Install Python packages
 uv run inv dev.submodules        # Update git submodules
 ```
 
+### Update Tasks
+
+```bash
+uv run inv update.tools-sha              # Update tools image SHA to latest
+uv run inv update.tools-sha --dry-run    # Preview changes without modifying files
+```
+
 For all available tasks:
 
 ```bash
