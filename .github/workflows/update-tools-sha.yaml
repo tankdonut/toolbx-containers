@@ -29,4 +29,4 @@ jobs:
           CI: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          uv run inv update.update-tools-sha
+          uv run inv update.tools-sha

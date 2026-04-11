@@ -135,7 +135,7 @@ def replace_sha_in_files(files: list[Path], old_sha: str, new_sha: str) -> int:
 
 
 @task
-def update_tools_sha(
+def tools_sha(
     c: Context,
     dry_run: bool = False,
     image: str = TOOLS_IMAGE,
