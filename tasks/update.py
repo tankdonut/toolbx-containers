@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 from pathlib import Path
@@ -35,13 +36,17 @@ def warn_msg(msg: str) -> None:
     print(f"\033[1;33m==>\033[0m {msg}")
 
 
-def fetch_latest_digest(image: str, tag: str, token: str | None = None) -> str:
+def fetch_latest_digest(image: str, tag: str, github_token: str | None = None) -> str:
     registry_host = image.split("/")[0]
     owner_name = "/".join(image.split("/")[1:])
     owner, name = owner_name.split("/", 1)
 
     token_url = f"https://{registry_host}/token?scope=repository:{owner}/{name}:pull"
     token_req = urllib.request.Request(token_url)
+
+    if github_token:
+        credentials = base64.b64encode(f"x-access-token:{github_token}".encode()).decode()
+        token_req.add_header("Authorization", f"Basic {credentials}")
 
     try:
         with urllib.request.urlopen(token_req) as resp:
@@ -58,9 +63,6 @@ def fetch_latest_digest(image: str, tag: str, token: str | None = None) -> str:
             ", application/vnd.docker.distribution.manifest.v2+json"
         ),
     }
-
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
 
     manifest_req = urllib.request.Request(manifest_url, headers=headers)
 
