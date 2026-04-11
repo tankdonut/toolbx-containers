@@ -13,6 +13,7 @@ from config import ROOT_DIR
 
 TOOLS_IMAGE = "ghcr.io/tankdonut/tools"
 TOOLS_TAG = "latest"
+IMAGE_SHA_PATTERN = re.compile(r"ghcr\.io/tankdonut/tools@\b(sha256:[a-f0-9]{64})\b")
 SHA_PATTERN = re.compile(r"sha256:[a-f0-9]{64}")
 BRANCH_NAME = "update/tools-sha"
 SKIP_DIRS = {
@@ -52,7 +53,10 @@ def fetch_latest_digest(image: str, tag: str, token: str | None = None) -> str:
     manifest_url = f"https://{registry_host}/v2/{owner}/{name}/manifests/{tag}"
     headers = {
         "Authorization": f"Bearer {auth_token}",
-        "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+        "Accept": (
+            "application/vnd.oci.image.manifest.v1+json"
+            ", application/vnd.docker.distribution.manifest.v2+json"
+        ),
     }
 
     if token:
@@ -72,7 +76,10 @@ def fetch_latest_digest(image: str, tag: str, token: str | None = None) -> str:
         raise RuntimeError(f"Failed to fetch manifest digest from GHCR: {exc}") from exc
 
 
-def find_sha_references(root_dir: Path) -> list[tuple[Path, str]]:
+def find_tools_sha_references(root_dir: Path, image: str) -> list[tuple[Path, str]]:
+    image_pattern = re.compile(
+        r"ghcr\.io/" + re.escape("/".join(image.split("/")[1:])) + r"@(sha256:[a-f0-9]{64})"
+    )
     refs: list[tuple[Path, str]] = []
 
     for path in root_dir.rglob("*"):
@@ -87,10 +94,31 @@ def find_sha_references(root_dir: Path) -> list[tuple[Path, str]]:
         except (UnicodeDecodeError, PermissionError, OSError):
             continue
 
-        for match in SHA_PATTERN.finditer(content):
-            refs.append((path, match.group()))
+        for match in image_pattern.finditer(content):
+            refs.append((path, match.group(1)))
 
     return refs
+
+
+def find_sha_references(root_dir: Path, sha: str) -> list[Path]:
+    files: list[Path] = []
+
+    for path in root_dir.rglob("*"):
+        if not path.is_file():
+            continue
+
+        if any(skip in path.parts for skip in SKIP_DIRS):
+            continue
+
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, PermissionError, OSError):
+            continue
+
+        if sha in content:
+            files.append(path)
+
+    return files
 
 
 def replace_sha_in_files(files: list[Path], old_sha: str, new_sha: str) -> int:
@@ -120,13 +148,13 @@ def update_tools_sha(
     new_sha = fetch_latest_digest(image, tag, github_token)
     info(f"Latest digest: {new_sha}")
 
-    refs = find_sha_references(ROOT_DIR)
+    image_refs = find_tools_sha_references(ROOT_DIR, image)
 
-    if not refs:
-        warn_msg("No SHA references found in repository")
+    if not image_refs:
+        warn_msg(f"No {image} SHA references found in repository")
         return
 
-    old_sha = refs[0][1]
+    old_sha = image_refs[0][1]
 
     if old_sha == new_sha:
         info("Already up to date")
@@ -135,8 +163,8 @@ def update_tools_sha(
     info(f"Current SHA: {old_sha}")
     info(f"Latest SHA:  {new_sha}")
 
-    affected = sorted({f for f, _ in refs})
-    for f in affected:
+    affected = find_sha_references(ROOT_DIR, old_sha)
+    for f in sorted(affected):
         info(f"  {f.relative_to(ROOT_DIR)}")
 
     if dry_run:
