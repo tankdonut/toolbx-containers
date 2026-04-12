@@ -1,3 +1,6 @@
+# browsers
+chromium-browser
+
 # fonts
 fontconfig
 fonts-noto
