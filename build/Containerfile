@@ -42,7 +42,11 @@ RUN ln -sf /usr/local/bin/buildah /usr/bin/host-spawn && \
     ln -sf /usr/local/bin/flatpak /usr/bin/host-spawn && \
     ln -sf /usr/local/bin/podman /usr/bin/host-spawn && \
     ln -sf /usr/local/bin/podman-compose /usr/bin/host-spawn && \
-    ln -sf /usr/local/bin/rpm-ostree /usr/bin/host-spawn
+    ln -sf /usr/local/bin/rpm-ostree /usr/bin/host-spawn && \
+    # playwright compatibility
+    ln -sf /usr/bin/chromium-browser /usr/bin/chromium && \
+    mkdir -p /opt/google/chrome && \
+    ln -sf /usr/bin/chromium-browser /opt/google/chrome/chrome
 
 COPY rootfs/usr/share/fonts/ /usr/share/fonts/
 
