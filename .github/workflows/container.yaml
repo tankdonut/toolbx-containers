@@ -1,4 +1,4 @@
-name: container
+name: Build and Release Container
 
 on:
   schedule:

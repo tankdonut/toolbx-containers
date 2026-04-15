@@ -1,4 +1,4 @@
-name: update-tools-sha
+name: Update Tools SHA
 
 on:
   schedule:
