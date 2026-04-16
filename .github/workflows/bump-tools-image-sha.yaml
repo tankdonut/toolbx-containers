@@ -1,4 +1,4 @@
-name: Bump Tool SHA
+name: Bump Tools Image SHA
 
 on:
   schedule:
