@@ -52,8 +52,9 @@ RUN wget -qO vscodium.gpg https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/r
     echo 'deb [ signed-by=/usr/share/keyrings/vscodium-archive-keyring.gpg ] https://download.vscodium.com/debs vscodium main' > /etc/apt/sources.list.d/vscodium.list && \
     apt-get update && apt-get install -y --no-install-recommends codium && apt-get clean
 
-# playwright compatibility
-RUN ln -sf /usr/bin/chromium-browser /usr/bin/chromium && \
+# hadolint ignore=DL3016,DL3059
+RUN npm install -g playwright && \
+    ln -sf /usr/bin/chromium-browser /usr/bin/chromium && \
     mkdir -p /opt/google/chrome && \
     ln -sf /usr/bin/chromium-browser /opt/google/chrome/chrome
 
