@@ -1,4 +1,4 @@
-name: Pre-commit Hooks
+name: Lint & Test
 
 on:
   pull_request:

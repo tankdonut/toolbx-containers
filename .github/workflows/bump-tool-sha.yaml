@@ -1,4 +1,4 @@
-name: Update Tools SHA
+name: Bump Tool SHA
 
 on:
   schedule:
