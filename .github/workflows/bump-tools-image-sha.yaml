@@ -31,7 +31,6 @@ jobs:
 
       - name: Run update-tools-sha task
         env:
-          CI: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          uv run inv update.tools-sha
+          uv run inv update.tools-sha --pr
