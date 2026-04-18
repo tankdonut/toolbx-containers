@@ -124,10 +124,7 @@ uv run inv build.test --image ubuntu-toolbox --verbose
 ```bash
 uv run inv dev.clean             # Remove cache directory
 uv run inv dev.download-fonts    # Download Meslo fonts
-uv run inv dev.get-pypi-version   # Check PyPI package versions
-uv run inv dev.node-modules      # Install node dependencies
 uv run inv dev.pre-commit        # Run pre-commit hooks
-uv run inv dev.python-packages   # Install Python packages
 uv run inv dev.submodules        # Update git submodules
 ```
 
