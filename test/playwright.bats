@@ -22,3 +22,12 @@ load common.sh
 	run readlink /opt/google/chrome/chrome
 	[ "$output" = "/usr/bin/chromium-browser" ]
 }
+
+@test "test playwright is in PATH" {
+	check_path playwright
+}
+
+@test "test playwright reports version" {
+	run playwright --version
+	[ "$status" -eq 0 ]
+}

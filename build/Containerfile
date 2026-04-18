@@ -38,12 +38,16 @@ RUN curl -sSL -o /tmp/bun.zip "https://github.com/oven-sh/bun/releases/latest/do
     ln -s /usr/local/bin/bun /usr/local/bin/bunx && \
     rm -rf /tmp/bun.zip /tmp/bun
 
-RUN ln -sf /usr/local/bin/buildah /usr/bin/host-spawn && \
-    ln -sf /usr/local/bin/flatpak /usr/bin/host-spawn && \
-    ln -sf /usr/local/bin/podman /usr/bin/host-spawn && \
-    ln -sf /usr/local/bin/podman-compose /usr/bin/host-spawn && \
-    ln -sf /usr/local/bin/rpm-ostree /usr/bin/host-spawn && \
-    # playwright compatibility
+RUN ln -sf /usr/bin/host-spawn /usr/local/bin/buildah && \
+    ln -sf /usr/bin/host-spawn /usr/local/bin/docker && \
+    ln -sf /usr/bin/host-spawn /usr/local/bin/docker-compose && \
+    ln -sf /usr/bin/host-spawn /usr/local/bin/flatpak && \
+    ln -sf /usr/bin/host-spawn /usr/local/bin/podman && \
+    ln -sf /usr/bin/host-spawn /usr/local/bin/podman-compose && \
+    ln -sf /usr/bin/host-spawn /usr/local/bin/rpm-ostree
+
+# hadolint ignore=DL3016,DL3059
+RUN npm install -g playwright && \
     ln -sf /usr/bin/chromium-browser /usr/bin/chromium && \
     mkdir -p /opt/google/chrome && \
     ln -sf /usr/bin/chromium-browser /opt/google/chrome/chrome
