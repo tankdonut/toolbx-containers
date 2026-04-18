@@ -140,10 +140,10 @@ def replace_sha_in_files(files: list[Path], old_sha: str, new_sha: str) -> int:
 def tools_sha(
     c: Context,
     dry_run: bool = False,
+    pr: bool = False,
     image: str = TOOLS_IMAGE,
     tag: str = TOOLS_TAG,
 ) -> None:
-    is_ci = "CI" in os.environ
     github_token = os.environ.get("GITHUB_TOKEN")
 
     info(f"Fetching latest digest for {image}:{tag}")
@@ -175,13 +175,13 @@ def tools_sha(
 
     count = replace_sha_in_files(affected, old_sha, new_sha)
 
-    if is_ci:
+    if pr:
         subprocess.run(["git", "checkout", "-B", BRANCH_NAME], check=True)
         subprocess.run(["git", "add", "-A"], check=True)
         msg = f"chore(deps): update tools image digest to {new_sha[:19]}..."
         subprocess.run(["git", "commit", "-m", msg], check=True)
         subprocess.run(["git", "push", "origin", BRANCH_NAME, "--force"], check=True)
-        subprocess.run(
+        pr_create = subprocess.run(
             [
                 "gh",
                 "pr",
@@ -195,6 +195,13 @@ def tools_sha(
                 "--head",
                 BRANCH_NAME,
             ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        pr_url = pr_create.stdout.strip()
+        subprocess.run(
+            ["gh", "pr", "merge", pr_url, "--auto", "--squash"],
             check=True,
         )
     else:
