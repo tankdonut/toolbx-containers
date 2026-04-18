@@ -1,0 +1,25 @@
+name: Prune GHCR Images
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 1 * * *"
+
+env:
+  FEDORA_VERSION: "44"
+  SEMVER_REGEX: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+
+jobs:
+  cleanup-ghcr:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Cleanup Stale GHCR Images
+        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4
+        with:
+          package: ${{ github.event.repository.name }}
+          keep-n-tagged: 10
+          exclude-tags: v.*,latest,${{ env.FEDORA_VERSION }},${{ env.SEMVER_REGEX }}
+          delete-untagged: true
+          use-regex: true
