@@ -84,6 +84,7 @@ tmux
 util-linux-user
 vim
 vulkan-loader
+wl-clipboard
 xz
 
 # node

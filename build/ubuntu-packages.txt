@@ -28,6 +28,7 @@ ssh-askpass
 sudo
 vim
 wget
+wl-clipboard
 xz-utils
 
 # additional parity tools
