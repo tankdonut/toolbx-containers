@@ -14,11 +14,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+    strategy:
+      matrix:
+        package:
+          - fedora-toolbox
+          # TODO: uncomment when ubuntu-toolbox is deployed
+          # - ubuntu-toolbox
     steps:
-      - name: Cleanup Stale GHCR Images
+      - name: Cleanup Stale GHCR Images (${{ matrix.package }})
+        continue-on-error: true
         uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4
         with:
-          package: ${{ github.event.repository.name }}
+          package: ${{ matrix.package }}
           keep-n-tagged: 10
           exclude-tags: v.*,latest,${{ env.FEDORA_VERSION }},${{ env.SEMVER_REGEX }}
           delete-untagged: true
