@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Containers meant to be used by Toolbx."
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["invoke>=2.2.0", "python-dotenv>=1.1.1"]
+dependencies = ["invoke>=3.0.3", "python-dotenv>=1.1.1"]
 
 [tool.pyright]
 venvPath = "."
