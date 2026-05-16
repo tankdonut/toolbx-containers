@@ -22,7 +22,7 @@ def download_fonts(c: Context) -> None:
 
 @task
 def pre_commit(c: Context) -> None:
-    c.run("pre-commit run --all")
+    c.run("uv run pre-commit run --all")
 
 
 @task

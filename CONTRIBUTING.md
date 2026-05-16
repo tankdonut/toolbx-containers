@@ -5,31 +5,57 @@ set up, build, test, and submit changes.
 
 ## Development Environment
 
-You'll need a few tools installed before you start:
+You need a few tools installed before you start. Most are managed automatically
+through [asdf](https://asdf-vm.com/) and the pinned versions in
+[`.tool-versions`](.tool-versions).
 
-- [uv](https://docs.astral.sh/uv/) for Python dependency management
+### Prerequisites
+
+Install these manually:
+
+- [asdf](https://asdf-vm.com/) for language runtime and tool management
 - [podman](https://podman.io/) or Docker as the container runtime
-- [pre-commit](https://pre-commit.com/) for git hooks
-- [asdf](https://asdf-vm.com/) for language runtime management
 - [git](https://git-scm.com/) for version control
 
 ### Initial Setup
 
-Clone the repository and install the git hooks:
+Clone the repository and install the managed tools:
 
 ```bash
 git clone https://github.com/tankdonut/toolbx-containers.git
 cd toolbx-containers
-pre-commit install
+asdf install
 ```
 
-The `pre-commit install` step wires up the hooks defined in
+The `asdf install` command reads `.tool-versions` and installs:
+
+- **Python** -- the runtime used by the build and dev tasks
+- **uv** -- Python dependency management (no manual `pip install` needed)
+- **hadolint** -- Containerfile linter (used by the pre-commit hooks)
+
+Python dependencies (including `pre-commit` and `invoke`) are managed by `uv`
+and listed in `pyproject.toml`. There is no manual `pip install` step. All
+commands use the `uv run` prefix, which resolves and executes in the project's
+virtual environment automatically.
+
+After the managed tools are installed, wire up the git hooks:
+
+```bash
+uv run pre-commit install
+```
+
+The `uv run pre-commit install` step configures the hooks defined in
 [`.pre-commit-config.yaml`](.pre-commit-config.yaml) so they run automatically
 on every commit.
 
-Python dependencies are managed through `uv`. There is no manual `pip install`
-step. All invoke tasks use the `uv run inv` prefix, which resolves and executes
-in the project's virtual environment automatically.
+### Local Configuration (Optional)
+
+Copy `.env.example` to `.env` and adjust values if you plan to push images or
+override the default Fedora or Ubuntu versions:
+
+```bash
+cp .env.example .env
+```
 
 ## Build Tasks
 
@@ -109,8 +135,8 @@ uv run inv dev.pre-commit       # Run all pre-commit hooks
 - `dev.clean` deletes the `cache/` directory used for downloaded artifacts.
 - `dev.download-fonts` fetches the Meslo Nerd Fonts zip into `cache/`. The
   build process references these fonts.
-- `dev.pre-commit` runs `pre-commit run --all` across the repository. Useful
-  when you want to check everything without committing.
+- `dev.pre-commit` runs `uv run pre-commit run --all` across the repository.
+  Useful when you want to check everything without committing.
 
 ## Linting and Hooks
 
@@ -118,7 +144,7 @@ Pre-commit runs automatically on every commit when installed. You can also
 trigger it manually:
 
 ```bash
-pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
 Or use the Invoke shortcut:
@@ -199,7 +225,7 @@ project's `.markdownlint.json` configuration. The key rules:
 Run the linter to check:
 
 ```bash
-pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
 ---

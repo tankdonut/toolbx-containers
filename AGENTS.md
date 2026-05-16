@@ -12,10 +12,6 @@ Agents should prioritize safety, reproducibility, and minimal disruption to
 existing developer workflows. This file defines how agents are expected to
 behave, what they may change, and how they should communicate those changes.
 
-The structure and recommendations are informed by GitHub's guidance on
-writing effective `AGENTS.md` files:
-<https://github.blog/ai-and-ml/github-copilot/how-to-write-a-great-agents-md-lessons-from-over-2500-repositories/>.
-
 ## Where to Look
 
 - `tasks/` - Invoke task definitions (`build.py`, `dev.py`, `config.py`)
@@ -23,13 +19,46 @@ writing effective `AGENTS.md` files:
 - `build/` - Containerfiles, package lists, rootfs overlay
 - `build/rootfs/` - Vendored container filesystem (profile scripts, configs)
 - `.github/workflows/` - CI pipeline definitions
+- `.tool-versions` - Pinned versions for ASDF-managed tools (hadolint, python,
+  uv)
+- `.env.example` - Environment variable template for build configuration
+- `pyproject.toml` - Python dependencies, ruff and pyright configuration
+- `.pre-commit-config.yaml` - Pre-commit hook definitions
+- `.markdownlint.json` - Markdown linting rules
 
 ## Commands
 
-- `uv run inv build.build` - Build container image
-- `uv run inv build.test` - Run bats test suite (requires pre-built image)
+All commands use the `uv run inv` prefix. Use variant-specific tasks instead of
+the generic `build.build` or `build.test`, which require extra arguments.
+
+### Build
+
+- `uv run inv build.build-fedora` - Build the Fedora toolbox image
+- `uv run inv build.build-ubuntu` - Build the Ubuntu toolbox image
+
+### Test
+
+Requires a pre-built image.
+
+- `uv run inv build.test-fedora` - Test the Fedora toolbox image
+- `uv run inv build.test-ubuntu` - Test the Ubuntu toolbox image
+- `uv run inv build.test --image <ref>` - Test an arbitrary image reference
+
+### Release
+
+Build, test, and push in sequence.
+
+- `uv run inv build.release-fedora` - Full pipeline for Fedora
+- `uv run inv build.release-ubuntu` - Full pipeline for Ubuntu
+
+Pass `--skip-tests` to skip the test step, or `--no-cache` to force a clean
+build.
+
+### Dev
+
 - `uv run inv dev.pre-commit` - Run all linters
-- `uv run inv dev.clean` - Remove build artifacts
+- `uv run inv dev.clean` - Remove the cache directory
+- `uv run inv dev.download-fonts` - Download Meslo Nerd Fonts into cache
 - `uv run inv --list` - List all available tasks
 
 ## Conventions
@@ -41,8 +70,23 @@ writing effective `AGENTS.md` files:
 - Profile scripts in `build/rootfs/etc/profile.d/` are sourced alphabetically
   (use `00`-`xx` prefix convention).
 - Python deps managed via `uv` (`pyproject.toml`), not system pip.
-- Pre-commit hooks: hadolint (Containerfiles), ruff (Python),
+- Tool versions pinned in `.tool-versions` (managed via asdf).
+- Pre-commit hooks: general hygiene (trailing whitespace, merge conflicts,
+  large files), hadolint (Containerfiles), ruff (Python),
   markdownlint-cli2 (Markdown).
+
+## Environment Configuration
+
+Build tasks read environment variables from `.env` (git-ignored). Copy
+`.env.example` to `.env` and adjust as needed:
+
+- `DESTINATION_REGISTRY` - Registry hostname for image tags (default:
+  `localhost`)
+- `FEDORA_VERSION` - Fedora version for build args (default: `44`)
+- `UBUNTU_VERSION` - Ubuntu version for build args (default: `24.04`)
+- `IMAGE_NAMESPACE` - Override the image namespace (defaults to the git remote
+  owner)
+- `OCI_SOURCE_URL` - Override the OCI source URL label
 
 ## Core Principles
 
