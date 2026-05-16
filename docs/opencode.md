@@ -16,9 +16,19 @@ The system config sets these defaults:
 - **compaction**: auto with pruning enabled, 10 000 tokens reserved
 - **default agent**: `build`
 - **instructions**: loads `AGENTS.md`
-- **permissions**: bash commands require confirmation unless explicitly
-  allowlisted (read-only tools, git queries, build tools); file edits and
-  writes require confirmation except under `/tmp`
+- **permissions**:
+  - **bash**: defaults to `ask`; the following are allowlisted:
+    - git read operations (`status`, `log`, `diff`, `show`, `branch`,
+      `rev-parse`)
+    - text processing (`awk`, `cat`, `grep`, `rg`, `sed`, `sort`, `uniq`)
+    - output commands (`echo`, `printf`)
+    - filesystem discovery (`find`, `tree`, `test`, `type`, `ls`, `stat`,
+      `tail`, `wc`, `which`)
+    - system information (`date`, `env`, `hostname`, `id`, `printenv`,
+      `uname`)
+    - build tools (`make`, `uv`)
+  - **edit** / **write**: defaults to `ask`; `/tmp/**` is allowed
+  - **external_directory**: `/tmp/**` is allowed
 - **plugin**: loads `@tarquinen/opencode-dcp@latest`
 - **share**: `manual` (sessions are not shared without explicit action)
 - **watcher**: ignores `.git`, `node_modules`, `dist`, and `build`
