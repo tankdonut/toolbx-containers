@@ -28,8 +28,13 @@
         console.log(JSON.stringify(parsed));
     ')"
 
-    edit_perm=$(echo "$config" | jq -r '.permission.edit')
-    write_perm=$(echo "$config" | jq -r '.permission.write')
+    # Edit and write default to ask, but allow /tmp
+    edit_default=$(echo "$config" | jq -r '.permission.edit["*"]')
+    edit_tmp=$(echo "$config" | jq -r '.permission.edit["/tmp/**"]')
+    write_default=$(echo "$config" | jq -r '.permission.write["*"]')
+    write_tmp=$(echo "$config" | jq -r '.permission.write["/tmp/**"]')
+
+    # Bash defaults to ask with specific allowlists
     bash_default=$(echo "$config" | jq -r '.permission.bash["*"]')
     git_status=$(echo "$config" | jq -r '.permission.bash["git status *"]')
     git_log=$(echo "$config" | jq -r '.permission.bash["git log *"]')
@@ -38,8 +43,21 @@
     git_branch=$(echo "$config" | jq -r '.permission.bash["git branch *"]')
     git_rev_parse=$(echo "$config" | jq -r '.permission.bash["git rev-parse *"]')
 
-    [ "$edit_perm" = "ask" ]
-    [ "$write_perm" = "ask" ]
+    # Additional bash allowlists
+    bash_cat=$(echo "$config" | jq -r '.permission.bash["cat *"]')
+    bash_find=$(echo "$config" | jq -r '.permission.bash["find *"]')
+    bash_uv=$(echo "$config" | jq -r '.permission.bash["uv *"]')
+    bash_make=$(echo "$config" | jq -r '.permission.bash["make *"]')
+    bash_sed=$(echo "$config" | jq -r '.permission.bash["sed *"]')
+    bash_echo=$(echo "$config" | jq -r '.permission.bash["echo *"]')
+
+    # External directory access for /tmp
+    external_tmp=$(echo "$config" | jq -r '.permission.external_directory["/tmp/**"]')
+
+    [ "$edit_default" = "ask" ]
+    [ "$edit_tmp" = "allow" ]
+    [ "$write_default" = "ask" ]
+    [ "$write_tmp" = "allow" ]
     [ "$bash_default" = "ask" ]
     [ "$git_status" = "allow" ]
     [ "$git_log" = "allow" ]
@@ -47,4 +65,11 @@
     [ "$git_show" = "allow" ]
     [ "$git_branch" = "allow" ]
     [ "$git_rev_parse" = "allow" ]
+    [ "$bash_cat" = "allow" ]
+    [ "$bash_find" = "allow" ]
+    [ "$bash_uv" = "allow" ]
+    [ "$bash_make" = "allow" ]
+    [ "$bash_sed" = "allow" ]
+    [ "$bash_echo" = "allow" ]
+    [ "$external_tmp" = "allow" ]
 }

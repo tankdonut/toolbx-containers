@@ -38,10 +38,46 @@
             "stat": "allow",
             "tail *": "allow",
             "wc *": "allow",
-            "which": "allow"
+            "which": "allow",
+            // Text processing (read-only in typical use)
+            "awk *": "allow",
+            "cat *": "allow",
+            "grep *": "allow",
+            "rg *": "allow",
+            "sed *": "allow",
+            "sort *": "allow",
+            "uniq *": "allow",
+            // Output commands (can write via redirects)
+            "echo *": "allow",
+            "printf *": "allow",
+            // Filesystem discovery
+            "find *": "allow",
+            "tree *": "allow",
+            "test *": "allow",
+            "type *": "allow",
+            // System information
+            "date": "allow",
+            "env": "allow",
+            "hostname": "allow",
+            "id": "allow",
+            "printenv *": "allow",
+            "uname *": "allow",
+            // Build and package tools
+            "make *": "allow",
+            "uv *": "allow"
         },
-        "edit": "ask",
-        "write": "ask"
+        "edit": {
+            "*": "ask",
+            "/tmp/**": "allow"
+        },
+        "write": {
+            "*": "ask",
+            "/tmp/**": "allow"
+        },
+        // Allow tools to access paths under /tmp (scratch space)
+        "external_directory": {
+            "/tmp/**": "allow"
+        }
     },
     // OpenCode plugins to load
     "plugin": [
