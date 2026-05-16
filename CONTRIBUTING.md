@@ -10,6 +10,7 @@ You'll need a few tools installed before you start:
 - [uv](https://docs.astral.sh/uv/) for Python dependency management
 - [podman](https://podman.io/) or Docker as the container runtime
 - [pre-commit](https://pre-commit.com/) for git hooks
+- [asdf](https://asdf-vm.com/) for language runtime management
 - [git](https://git-scm.com/) for version control
 
 ### Initial Setup
