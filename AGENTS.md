@@ -1,11 +1,12 @@
 # AGENTS.md
 
-Guidelines for automated coding agents and contributors working in this
-repository.
+Guidelines for automated coding agents operating in this repository.
 
 ## Purpose
 
 This project hosts container configurations and related tooling.
+
+For human contributor guidelines, see [CONTRIBUTING](CONTRIBUTING.md).
 
 Agents should prioritize safety, reproducibility, and minimal disruption to
 existing developer workflows. This file defines how agents are expected to
@@ -14,6 +15,34 @@ behave, what they may change, and how they should communicate those changes.
 The structure and recommendations are informed by GitHub's guidance on
 writing effective `AGENTS.md` files:
 <https://github.blog/ai-and-ml/github-copilot/how-to-write-a-great-agents-md-lessons-from-over-2500-repositories/>.
+
+## Where to Look
+
+- `tasks/` - Invoke task definitions (`build.py`, `dev.py`, `config.py`)
+- `test/` - Bats test files (`*.bats` + `common.sh` helper)
+- `build/` - Containerfiles, package lists, rootfs overlay
+- `build/rootfs/` - Vendored container filesystem (profile scripts, configs)
+- `.github/workflows/` - CI pipeline definitions
+
+## Commands
+
+- `uv run inv build.build` - Build container image
+- `uv run inv build.test` - Run bats test suite (requires pre-built image)
+- `uv run inv dev.pre-commit` - Run all linters
+- `uv run inv dev.clean` - Remove build artifacts
+- `uv run inv --list` - List all available tasks
+
+## Conventions
+
+- Tests use bats framework in `test/` directory.
+- Two container variants: Fedora (`Containerfile`) and Ubuntu
+  (`Containerfile.ubuntu`).
+- Package lists: `build/fedora-packages.txt` and `build/ubuntu-packages.txt`.
+- Profile scripts in `build/rootfs/etc/profile.d/` are sourced alphabetically
+  (use `00`-`xx` prefix convention).
+- Python deps managed via `uv` (`pyproject.toml`), not system pip.
+- Pre-commit hooks: hadolint (Containerfiles), ruff (Python),
+  markdownlint-cli2 (Markdown).
 
 ## Core Principles
 
@@ -99,7 +128,3 @@ writing effective `AGENTS.md` files:
 - Ask for clarification instead of guessing.
 - Prefer reversible changes.
 - Propose a minimal safe default and document the assumption.
-
----
-
-This file defines expectations for automated agents and contributors operating in this repository.
