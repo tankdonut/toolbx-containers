@@ -16,6 +16,34 @@ The structure and recommendations are informed by GitHub's guidance on
 writing effective `AGENTS.md` files:
 <https://github.blog/ai-and-ml/github-copilot/how-to-write-a-great-agents-md-lessons-from-over-2500-repositories/>.
 
+## Where to Look
+
+- `tasks/` - Invoke task definitions (`build.py`, `dev.py`, `config.py`)
+- `test/` - Bats test files (`*.bats` + `common.sh` helper)
+- `build/` - Containerfiles, package lists, rootfs overlay
+- `build/rootfs/` - Vendored container filesystem (profile scripts, configs)
+- `.github/workflows/` - CI pipeline definitions
+
+## Commands
+
+- `uv run inv build.build` - Build container image
+- `uv run inv build.test` - Run bats test suite (requires pre-built image)
+- `uv run inv dev.pre-commit` - Run all linters
+- `uv run inv dev.clean` - Remove build artifacts
+- `uv run inv --list` - List all available tasks
+
+## Conventions
+
+- Tests use bats framework in `test/` directory.
+- Two container variants: Fedora (`Containerfile`) and Ubuntu
+  (`Containerfile.ubuntu`).
+- Package lists: `build/fedora-packages.txt` and `build/ubuntu-packages.txt`.
+- Profile scripts in `build/rootfs/etc/profile.d/` are sourced alphabetically
+  (use `00`-`xx` prefix convention).
+- Python deps managed via `uv` (`pyproject.toml`), not system pip.
+- Pre-commit hooks: hadolint (Containerfiles), ruff (Python),
+  markdownlint-cli2 (Markdown).
+
 ## Core Principles
 
 - Be safe: avoid destructive operations unless explicitly requested.
