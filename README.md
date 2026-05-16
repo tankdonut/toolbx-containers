@@ -3,38 +3,20 @@
 Container images intended for use with
 [Toolbx](https://github.com/containers/toolbox).
 
-These images provide reproducible development environments with common CLI
-tools, language runtimes, and supporting utilities preinstalled.
+## Variants
 
-## Purpose
-
-This repository defines container builds used as development environments via
-Toolbx. The goal is to provide:
-
-- A consistent CLI toolchain
-- Preinstalled language ecosystems (Node, Python, etc.)
-- Infrastructure and DevOps tooling
-- Reproducible and deterministic builds
-
-## Supported Variants
-
-Containerfiles are located under `build/`:
-
-- `fedora` (default) -> `build/Containerfile`
-- `ubuntu` -> `build/Containerfile.ubuntu`
+| Variant | Image | Containerfile |
+|---------|-------|---------------|
+| Fedora 44 | `ghcr.io/tankdonut/fedora-toolbox:44` | `build/Containerfile` |
+| Ubuntu 24.04 | `build/Containerfile.ubuntu` | `build/Containerfile.ubuntu` |
 
 ## Quick Start
 
-Build a container image:
+Pull a prebuilt image and create a Toolbx container:
 
 ```bash
-podman build -f build/Containerfile.ubuntu -t ubuntu-toolbox
-```
-
-Create and enter a Toolbx container from the built image:
-
-```bash
-toolbox create --image ubuntu-toolbox
+podman pull ghcr.io/tankdonut/fedora-toolbox:44
+toolbox create --image ghcr.io/tankdonut/fedora-toolbox:44
 toolbox enter
 ```
 
