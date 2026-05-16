@@ -26,8 +26,8 @@ build/Containerfile.<variant>
 
 Currently supported variants:
 
-- `fedora` (default) → `build/Containerfile`
-- `ubuntu` → `build/Containerfile.ubuntu`
+- `fedora` (default) -> `build/Containerfile`
+- `ubuntu` -> `build/Containerfile.ubuntu`
 
 To see available variants:
 
@@ -82,9 +82,12 @@ uv run inv build.test-ubuntu    # Test Ubuntu toolbox
 
 These tasks:
 
-1. Verify the image exists (build first if needed)
+1. Verify the image exists (raises an error if not found)
 2. Mount the test directory into the container
 3. Execute bats inside the container
+
+You must build the image before running tests. The test tasks do not
+auto-build.
 
 For advanced options:
 
@@ -95,123 +98,64 @@ uv run inv build.test --image ubuntu-toolbox --verbose
 These are smoke tests intended to validate container correctness rather than
 full integration behavior.
 
-## Development Tasks
+## OpenCode Configuration
 
-This project uses [invoke](https://www.pyinvoke.org/) tasks for development workflows.
-
-All tasks require `uv run inv` prefix:
-
-### Build Tasks
+This image ships a system-level OpenCode config at
+`/etc/opencode/opencode.jsonc`. The profile script
+(`build/rootfs/etc/profile.d/01-variables.sh`) sets:
 
 ```bash
-uv run inv build.build-fedora    # Build Fedora toolbox image
-uv run inv build.build-ubuntu    # Build Ubuntu toolbox image
-uv run inv build.push            # Push image to registry
-uv run inv build.release-fedora  # Build, test, and push Fedora
-uv run inv build.release-ubuntu  # Build, test, and push Ubuntu
+OPENCODE_CONFIG="/etc/opencode/opencode.jsonc"
 ```
 
-### Test Tasks
+### What the system config provides
+
+The system config sets these defaults:
+
+- **autoupdate**: disabled inside the container
+- **compaction**: auto with pruning enabled, 10 000 tokens reserved
+- **default agent**: `build`
+- **instructions**: loads `AGENTS.md`
+- **permissions**: bash commands require confirmation unless explicitly
+  allowlisted (read-only tools, git queries, build tools); file edits and
+  writes require confirmation except under `/tmp`
+- **plugin**: loads `@tarquinen/opencode-dcp@latest`
+- **share**: `manual` (sessions are not shared without explicit action)
+- **watcher**: ignores `.git`, `node_modules`, `dist`, and `build`
+
+The system config does **not** set a theme, network policy, or execution
+policy. Those fall back to OpenCode's built-in defaults.
+
+### User overrides
+
+Users can override the system configuration by creating:
 
 ```bash
-uv run inv build.test-fedora     # Test Fedora toolbox image
-uv run inv build.test-ubuntu     # Test Ubuntu toolbox image
-uv run inv build.test --image ubuntu-toolbox --verbose
+$XDG_CONFIG_HOME/opencode/opencode.jsonc
 ```
 
-### Dev Tasks
+User configuration takes precedence over the system config.
 
-```bash
-uv run inv dev.clean             # Remove cache directory
-uv run inv dev.download-fonts    # Download Meslo fonts
-uv run inv dev.pre-commit        # Run pre-commit hooks
-uv run inv dev.submodules        # Update git submodules
-```
+An example override template is provided at
+`build/rootfs/etc/skel/.config/opencode/opencode.jsonc.example`.
+That file demonstrates how to set a dark theme (`github-dark`), enable
+network access without confirmation, and disable destructive commands:
 
-### Update Tasks
-
-```bash
-uv run inv update.tools-sha              # Update tools image SHA to latest
-uv run inv update.tools-sha --dry-run    # Preview changes without modifying files
-```
-
-For all available tasks:
-
-```bash
-uv run inv --list
-```
-
-## Linting and Hooks
-
-This repository uses `pre-commit`.
-
-Configured hooks include:
-
-- General file hygiene checks
-- `hadolint` for Containerfiles
-- `ruff` for Python
-- `markdownlint` for Markdown formatting
-
-Install hooks locally:
-
-```bash
-pre-commit install
-```
-
-Run all hooks manually:
-
-```bash
-pre-commit run --all-files
-# or
-uv run inv dev.pre-commit
+```jsonc
+{
+    "theme": "github-dark",
+    "network": {
+        "enabled": true,
+        "requireConfirmation": false
+    },
+    "execution": {
+        "allowDestructiveCommands": false,
+        "requireConfirmation": true
+    }
+}
 ```
 
 ## Contributing
 
-Please follow the guidelines in `AGENTS.md`.
-
-Key expectations:
-
-- Avoid destructive git operations
-- Keep changes minimal and focused
-- Do not modify vendored rootfs content
-- Ensure Markdown passes `markdownlint`
-- Ensure tests pass
-
----
-
-This repository is intended to support a stable and reproducible Toolbx-based
-development workflow.
-
-## OpenCode Defaults
-
-This image provides a system-level OpenCode configuration at:
-
-`/etc/opencode/opencode.jsonc`
-
-The profile script `build/rootfs/etc/profile.d/01-variables.sh` exports:
-
-`OPENCODE_CONFIG=/etc/opencode`
-
-### Default Behavior
-
-- Theme: `github`
-- Destructive commands disabled
-- Confirmation required for execution actions
-- Network enabled but confirmation-gated
-- Plain output wrapped at 100 characters
-- Editor integration via `$EDITOR`
-
-These defaults balance developer convenience with secure-by-default behavior.
-
-## User Overrides
-
-Users may override the system configuration by creating:
-
-`$XDG_CONFIG_HOME/opencode/opencode.jsonc`
-
-User configuration takes precedence over `/etc/opencode`.
-
-An example override template is provided at:
-
-`build/rootfs/etc/skel/.config/opencode/opencode.jsonc.example`
+For development setup, task reference, and contribution guidelines, see
+[CONTRIBUTING.md](CONTRIBUTING.md).

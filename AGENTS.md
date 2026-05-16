@@ -1,11 +1,12 @@
 # AGENTS.md
 
-Guidelines for automated coding agents and contributors working in this
-repository.
+Guidelines for automated coding agents operating in this repository.
 
 ## Purpose
 
 This project hosts container configurations and related tooling.
+
+For human contributor guidelines, see [CONTRIBUTING](CONTRIBUTING.md).
 
 Agents should prioritize safety, reproducibility, and minimal disruption to
 existing developer workflows. This file defines how agents are expected to
@@ -99,7 +100,3 @@ writing effective `AGENTS.md` files:
 - Ask for clarification instead of guessing.
 - Prefer reversible changes.
 - Propose a minimal safe default and document the assumption.
-
----
-
-This file defines expectations for automated agents and contributors operating in this repository.
