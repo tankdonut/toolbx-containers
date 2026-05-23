@@ -17,6 +17,9 @@ jobs:
           # fetch full history so we can commit/push
           fetch-depth: 0
 
+      - name: Setup Python + uv
+        uses: tankdonut/github-actions/actions/setup-python-uv@v1
+
       - name: Install Python Dependencies
         run: uv sync
 
