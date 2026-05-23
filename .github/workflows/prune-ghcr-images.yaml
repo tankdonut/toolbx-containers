@@ -9,24 +9,14 @@ env:
   FEDORA_VERSION: "44"
   SEMVER_REGEX: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
 
+permissions:
+  packages: write
+
 jobs:
-  cleanup-ghcr:
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    strategy:
-      matrix:
-        package:
-          - fedora-toolbox
-          # TODO: uncomment when ubuntu-toolbox is deployed
-          # - ubuntu-toolbox
-    steps:
-      - name: Cleanup Stale GHCR Images (${{ matrix.package }})
-        continue-on-error: true
-        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4
-        with:
-          package: ${{ matrix.package }}
-          keep-n-tagged: 10
-          exclude-tags: v.*,latest,${{ env.FEDORA_VERSION }},${{ env.SEMVER_REGEX }}
-          delete-untagged: true
-          use-regex: true
+  prune:
+    uses: tankdonut/github-actions/.github/workflows/prune-ghcr.yaml@v1
+    with:
+      packages: '["fedora-toolbox"]'
+      exclude-tags: ${{ env.FEDORA_VERSION }}
+      keep-n-tagged: "10"
+    secrets: inherit
