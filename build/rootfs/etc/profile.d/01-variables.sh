@@ -79,7 +79,11 @@ export NODE_REPL_HISTORY
 
 NPM_CONFIG_USERCONFIG="${XDG_CONFIG_HOME}/npm/npmrc"
 
-export NPM_CONFIG_USERCONFIG
+if [ -d "${XDG_DATA_HOME}/npm/bin" ]; then
+	PATH="${XDG_DATA_HOME}/npm/bin:${PATH}"
+fi
+
+export NPM_CONFIG_USERCONFIG PATH
 
 # opencode
 
