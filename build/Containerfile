@@ -1,7 +1,7 @@
 ARG FEDORA_VERSION
 
 # hadolint ignore=DL3007
-FROM ghcr.io/tankdonut/tools:latest@sha256:1176ba2e7238077d46df62729794fabaf348c94a8e2580d4ab9fded3fda5162f as tools
+FROM ghcr.io/tankdonut/tools:latest@sha256:98987cfb24b01086eb9e86a1d6aba8f64792579432196277b5c8428ce021a5a5 as tools
 
 FROM quay.io/fedora/fedora-toolbox:${FEDORA_VERSION}
 
