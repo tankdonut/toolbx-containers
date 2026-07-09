@@ -7,9 +7,6 @@ kubernetes-client
 kubernetes-kubeadm
 moby-engine
 
-# crush
-crush
-
 # file archives
 p7zip
 p7zip-plugins
