@@ -79,10 +79,6 @@
             "/tmp/**": "allow"
         }
     },
-    // OpenCode plugins to load
-    "plugin": [
-        "@tarquinen/opencode-dcp@latest"
-    ],
     // Sharing behavior for sessions (manual = explicit user action required)
     "share": "manual",
     // File watcher configuration for workspace awareness

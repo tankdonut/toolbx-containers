@@ -1,5 +1,18 @@
 #!/usr/bin/env bats
 
+load common.sh
+
+@test "oc alias is in PATH" {
+	command -v oc >/dev/null 2>&1 || skip "oc not installed"
+	check_path oc
+}
+
+@test "oc alias delegates to opencode" {
+	command -v oc >/dev/null 2>&1 || skip "oc not installed"
+	[ -x "/usr/local/bin/oc" ]
+	grep -q "exec opencode" /usr/local/bin/oc
+}
+
 @test "OpenCode system config directory exists" {
     [ -d "/etc/opencode" ]
 }
