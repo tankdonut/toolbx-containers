@@ -29,7 +29,6 @@ The system config sets these defaults:
     - build tools (`make`, `uv`)
   - **edit** / **write**: defaults to `ask`; `/tmp/**` is allowed
   - **external_directory**: `/tmp/**` is allowed
-- **plugin**: loads `@tarquinen/opencode-dcp@latest`
 - **share**: `manual` (sessions are not shared without explicit action)
 - **watcher**: ignores `.git`, `node_modules`, `dist`, and `build`
 
