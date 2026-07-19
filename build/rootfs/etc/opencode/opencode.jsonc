@@ -17,67 +17,376 @@
     "instructions": [
         "AGENTS.md"
     ],
-    // Default permission policy for tool usage
-    // "ask" prompts before executing the action
+    // Permission baseline for a general-purpose dev container.
+    // Read-only inspection is allowed; workspace writes, network egress,
+    // and open-ended mutators ask; secrets are explicitly denied; and a
+    // small catastrophic-deny list guards irreversible operations.
+    //
+    // Rule evaluation is last-match-wins in insertion order: within each
+    // tool, broad rules must precede narrow exceptions, and deny rules
+    // belong at the end so they override any incidental allow above.
     "permission": {
+        // --- bash: tree-sitter-parsed sub-commands ---
         "bash": {
             "*": "ask",
+
+            // File discovery & metadata (read-only)
             "basename": "allow",
+            "basename *": "allow",
             "dirname": "allow",
+            "dirname *": "allow",
             "file": "allow",
-            "git branch *": "allow",
-            "git diff *": "allow",
-            "git log *": "allow",
-            "git rev-parse *": "allow",
-            "git show *": "allow",
-            "git status *": "allow",
-            "head *": "allow",
-            "ls *": "allow",
-            "pwd": "allow",
+            "file *": "allow",
             "realpath": "allow",
+            "realpath *": "allow",
             "stat": "allow",
-            "tail *": "allow",
+            "stat *": "allow",
+            "wc": "allow",
             "wc *": "allow",
+            "du *": "allow",
+            "df *": "allow",
+            "ls": "allow",
+            "ls *": "allow",
+            "tree *": "allow",
+            "find *": "allow",
+            "fd *": "allow",
+            "pwd": "allow",
             "which": "allow",
-            // Text processing (read-only in typical use)
-            "awk *": "allow",
+            "which *": "allow",
+            "type *": "allow",
+            "test *": "allow",
+            "[": "allow",
+
+            // File content viewing (read-only)
             "cat *": "allow",
+            "bat *": "allow",
+            "batcat *": "allow",
+            "head *": "allow",
+            "tail *": "allow",
+            "less *": "allow",
+            "more *": "allow",
+            "nl *": "allow",
+            "tac *": "allow",
+            "cut *": "allow",
+            "fold *": "allow",
+            "expand *": "allow",
+            "column *": "allow",
+            "paste *": "allow",
+            "comm *": "allow",
+            "diff *": "allow",
+            "rev *": "allow",
+
+            // Text processing (read-only by default; sed -i falls through to ask)
             "grep *": "allow",
+            "egrep *": "allow",
+            "fgrep *": "allow",
             "rg *": "allow",
+            "ag *": "allow",
+            "awk *": "allow",
+            "gawk *": "allow",
             "sed *": "allow",
+            "sed -i*": "ask",
             "sort *": "allow",
             "uniq *": "allow",
-            // Output commands (can write via redirects)
+            "tr *": "allow",
+            "fmt *": "allow",
+            "shuf *": "allow",
+
+            // Output (writes only via shell redirect)
             "echo *": "allow",
             "printf *": "allow",
-            // Filesystem discovery
-            "find *": "allow",
-            "tree *": "allow",
-            "test *": "allow",
-            "type *": "allow",
-            // System information
+            "seq *": "allow",
+            "yes *": "allow",
+            "clear": "allow",
+
+            // Hashing / encoding / inspection (read-only)
+            "md5sum *": "allow",
+            "sha1sum *": "allow",
+            "sha224sum *": "allow",
+            "sha256sum *": "allow",
+            "sha384sum *": "allow",
+            "sha512sum *": "allow",
+            "shasum *": "allow",
+            "b2sum *": "allow",
+            "cksum *": "allow",
+            "sum *": "allow",
+            "xxd *": "allow",
+            "hexdump *": "allow",
+            "od *": "allow",
+            "base64 *": "allow",
+            "basenc *": "allow",
+            "strings *": "allow",
+
+            // Structured-data viewers (read-only)
+            "jq *": "allow",
+            "yq *": "allow",
+            "xq *": "allow",
+            "dasel *": "allow",
+            "jc *": "allow",
+
+            // System info (read-only)
             "date": "allow",
-            "env": "allow",
-            "hostname": "allow",
+            "date *": "allow",
+            "cal *": "allow",
+            "uptime": "allow",
+            "whoami": "allow",
             "id": "allow",
+            "id *": "allow",
+            "groups": "allow",
+            "env": "allow",
+            "env *": "allow",
+            "printenv": "allow",
             "printenv *": "allow",
+            "hostname": "allow",
+            "hostname *": "allow",
+            "hostid": "allow",
             "uname *": "allow",
-            // Build and package tools
+            "arch": "allow",
+            "nproc": "allow",
+            "getconf *": "allow",
+            "getent *": "allow",
+            "locale": "allow",
+            "locale *": "allow",
+            "lscpu *": "allow",
+            "lsmem *": "allow",
+            "lspci *": "allow",
+            "lsusb *": "allow",
+            "lsblk *": "allow",
+            "lsns *": "allow",
+            "lsmod *": "allow",
+            "lsof *": "allow",
+            "free *": "allow",
+            "vmstat *": "allow",
+            "ps *": "allow",
+            "top -bn*": "allow",
+            "htop": "allow",
+            "mount": "allow",
+            "findmnt *": "allow",
+            "ip addr *": "allow",
+            "ip route *": "allow",
+            "ip neigh *": "allow",
+            "ip link show *": "allow",
+            "ifconfig": "allow",
+            "ifconfig *": "allow",
+            "ss *": "allow",
+            "netstat *": "allow",
+            "dmidecode *": "allow",
+
+            // Git read-only operations
+            "git status": "allow",
+            "git status *": "allow",
+            "git diff": "allow",
+            "git diff *": "allow",
+            "git log": "allow",
+            "git log *": "allow",
+            "git show": "allow",
+            "git show *": "allow",
+            "git rev-parse *": "allow",
+            "git describe *": "allow",
+            "git remote": "allow",
+            "git remote -v": "allow",
+            "git remote get-url *": "allow",
+            "git remote show *": "allow",
+            "git ls-files *": "allow",
+            "git ls-remote *": "allow",
+            "git blame *": "allow",
+            "git annotate *": "allow",
+            "git shortlog *": "allow",
+            "git cat-file *": "allow",
+            "git rev-list *": "allow",
+            "git count-objects *": "allow",
+            "git fsck *": "allow",
+            "git stash list": "allow",
+            "git help *": "allow",
+            "git --version": "allow",
+            "git --no-pager *": "allow",
+
+            // git branch: list/show only; mutating flags (-d/-D/-m/-M/
+            // --set-upstream) fall through to ask
+            "git branch": "allow",
+            "git branch -a*": "allow",
+            "git branch -r*": "allow",
+            "git branch -v*": "allow",
+            "git branch -l*": "allow",
+            "git branch --list*": "allow",
+            "git branch --all*": "allow",
+            "git branch --remotes*": "allow",
+            "git branch --verbose*": "allow",
+            "git branch --show-current*": "allow",
+            "git branch --contains*": "allow",
+            "git branch --merged*": "allow",
+            "git branch --no-merged*": "allow",
+            "git branch --points-at*": "allow",
+            "git branch --format*": "allow",
+            "git branch --column*": "allow",
+
+            // git tag: list/show only; creating/annotating/deleting falls
+            // through to ask
+            "git tag": "allow",
+            "git tag -l*": "allow",
+            "git tag --list*": "allow",
+            "git tag -n*": "allow",
+            "git tag --contains*": "allow",
+            "git tag --points-at*": "allow",
+            "git tag --merged*": "allow",
+            "git tag --format*": "allow",
+            "git tag --sort*": "allow",
+
+            // git config: read-only queries only; --set/--unset/etc. ask
+            "git config --get*": "allow",
+            "git config --list": "allow",
+            "git config --list *": "allow",
+            "git config -l": "allow",
+            "git config -l *": "allow",
+
+            // Help / docs
+            "man *": "allow",
+            "info *": "allow",
+            "tldr *": "allow",
+            "help *": "allow",
+
+            // Build tools (retained from prior config; common dev workflow)
             "make *": "allow",
-            "uv *": "allow"
+            "uv *": "allow",
+
+            // Catastrophic operations (defense-in-depth deny; placed last
+            // so last-match-wins resolves them above any incidental allow)
+            "rm -rf /": "deny",
+            "rm -rf /*": "deny",
+            "rm -fr /": "deny",
+            "rm -fr /*": "deny",
+            "rm -r /": "deny",
+            "rm -r /*": "deny",
+            "dd * of=/dev/*": "deny",
+            "mkfs* *": "deny",
+            "shutdown* *": "deny",
+            "reboot* *": "deny",
+            "poweroff* *": "deny",
+            "halt": "deny",
+            "halt *": "deny",
+            "init 0": "deny",
+            "init 6": "deny"
         },
+
+        // 'edit' gates the edit, write, and apply_patch tools together.
+        // (The previous standalone 'write' key was inert and is removed.)
         "edit": {
             "*": "ask",
-            "/tmp/**": "allow"
+            "/tmp/**": "allow",
+            "/var/tmp/**": "allow",
+            // Secrets denied regardless of path (override the /tmp allows)
+            "**/.env": "deny",
+            "**/.env.*": "deny",
+            "**/.env.example": "allow",
+            "**/.env.sample": "allow",
+            "**/.env.template": "allow",
+            "**/.env.dist": "allow",
+            "**/.env.defaults": "allow",
+            "**/.netrc": "deny",
+            "**/.npmrc": "deny",
+            "**/.pypirc": "deny",
+            "**/.git-credentials": "deny",
+            "**/id_rsa": "deny",
+            "**/id_ed25519": "deny",
+            "**/id_ecdsa": "deny",
+            "**/id_dsa": "deny",
+            "**/.ssh/**": "deny",
+            "**/.aws/credentials": "deny",
+            "**/.aws/credentials.*": "deny",
+            "**/.gnupg/**": "deny",
+            "**/.docker/config.json": "deny",
+            "**/.kube/config": "deny",
+            "**/.kube/*.yaml": "deny",
+            "**/credentials.json": "deny",
+            "**/*.tfstate": "deny",
+            "**/*.tfstate.*": "deny",
+            "**/*.pem": "deny",
+            "**/*.key": "deny",
+            "**/*.p12": "deny",
+            "**/*.keystore": "deny",
+            "**/*.kdbx": "deny",
+            "**/*.ovpn": "deny"
         },
-        "write": {
-            "*": "ask",
-            "/tmp/**": "allow"
+
+        // Read defaults to allow with the secret deny-list mirrored.
+        // 'read' also gates list_mcp_resources and read_mcp_resource.
+        "read": {
+            "*": "allow",
+            "~/.config/opencode/**": "allow",
+            "**/.env": "deny",
+            "**/.env.*": "deny",
+            "**/.env.example": "allow",
+            "**/.env.sample": "allow",
+            "**/.env.template": "allow",
+            "**/.env.dist": "allow",
+            "**/.env.defaults": "allow",
+            "**/.netrc": "deny",
+            "**/.npmrc": "deny",
+            "**/.pypirc": "deny",
+            "**/.git-credentials": "deny",
+            "**/id_rsa": "deny",
+            "**/id_ed25519": "deny",
+            "**/id_ecdsa": "deny",
+            "**/id_dsa": "deny",
+            "**/.ssh/**": "deny",
+            "**/.aws/credentials": "deny",
+            "**/.aws/credentials.*": "deny",
+            "**/.gnupg/**": "deny",
+            "**/.docker/config.json": "deny",
+            "**/.kube/config": "deny",
+            "**/.kube/*.yaml": "deny",
+            "**/credentials.json": "deny",
+            "**/*.tfstate": "deny",
+            "**/*.tfstate.*": "deny",
+            "**/*.pem": "deny",
+            "**/*.key": "deny",
+            "**/*.p12": "deny",
+            "**/*.keystore": "deny",
+            "**/*.kdbx": "deny",
+            "**/*.ovpn": "deny"
         },
-        // Allow tools to access paths under /tmp (scratch space)
+
+        // Discovery tools: allow (low risk; workspace-scoped)
+        "glob": {
+            "*": "allow"
+        },
+        "grep": {
+            "*": "allow"
+        },
+        "list": {
+            "*": "allow"
+        },
+
+        // Subagent dispatch: allow (model can route to specialists)
+        "task": {
+            "*": "allow"
+        },
+
+        // Code intelligence + skill loading: required for normal agent UX
+        "lsp": {
+            "*": "allow"
+        },
+        "skill": {
+            "*": "allow"
+        },
+
+        // Scratch space, standard tmp, and opencode self-config (the latter
+        // is read-mostly; edit/write still ask via the rules above)
         "external_directory": {
-            "/tmp/**": "allow"
-        }
+            "*": "ask",
+            "/tmp/**": "allow",
+            "/var/tmp/**": "allow",
+            "~/.config/opencode/**": "allow"
+        },
+
+        // Flat-action-only keys (schema rejects the object form for these)
+        "todowrite": "allow",
+        "question": "allow",
+        // Network egress can leak codebase context; ask per call
+        "webfetch": "ask",
+        "websearch": "ask",
+        // opencode safety net for repeated identical tool calls
+        "doom_loop": "ask"
     },
     // Sharing behavior for sessions (manual = explicit user action required)
     "share": "manual",

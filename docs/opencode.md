@@ -16,19 +16,45 @@ The system config sets these defaults:
 - **compaction**: auto with pruning enabled, 10 000 tokens reserved
 - **default agent**: `build`
 - **instructions**: loads `AGENTS.md`
-- **permissions**:
-  - **bash**: defaults to `ask`; the following are allowlisted:
-    - git read operations (`status`, `log`, `diff`, `show`, `branch`,
-      `rev-parse`)
-    - text processing (`awk`, `cat`, `grep`, `rg`, `sed`, `sort`, `uniq`)
-    - output commands (`echo`, `printf`)
-    - filesystem discovery (`find`, `tree`, `test`, `type`, `ls`, `stat`,
-      `tail`, `wc`, `which`)
-    - system information (`date`, `env`, `hostname`, `id`, `printenv`,
-      `uname`)
-    - build tools (`make`, `uv`)
-  - **edit** / **write**: defaults to `ask`; `/tmp/**` is allowed
-  - **external_directory**: `/tmp/**` is allowed
+- **permissions**: baseline tuned for a general-purpose dev container.
+  OpenCode evaluates rules last-match-wins in insertion order, so within
+  each tool the broad rule (`"*"`) leads and narrower rules follow.
+  - **bash**: defaults to `ask`. Read-only inspection is allowlisted --
+    file discovery (`ls`, `find`, `tree`, `stat`, `du`, `df`, `wc`,
+    `which`, ...), content viewing (`cat`, `head`, `tail`, `less`, `bat`,
+    `nl`, ...), text processing (`grep`, `rg`, `awk`, `sed`, `sort`,
+    `uniq`, `tr`, ...), hashing/encoding (`sha256sum`, `xxd`, `base64`,
+    `strings`, ...), structured-data viewers (`jq`, `yq`, `xq`, `dasel`),
+    system info (`uname`, `lscpu`, `ps`, `ss`, `ip addr`, `mount`, ...),
+    and read-only git operations (`status`, `diff`, `log`, `show`,
+    `rev-parse`, `describe`, `remote get-url`, `ls-files`, `blame`,
+    `cat-file`, list-only `branch`/`tag`/`config --get`). `sed -i`,
+    mutating `git branch`/`git tag` flags, and `git config --set*` fall
+    through to `ask`. Catastrophic operations (`rm -rf /`, `dd ... of=/dev/`,
+    `mkfs*`, `shutdown*`, `reboot*`, `halt`, `init 0/6`) are explicitly
+    denied. Build tools `make` and `uv` are allowed.
+  - **edit**: defaults to `ask`; `/tmp/**` and `/var/tmp/**` are allowed.
+    The `edit` permission also gates the `write` and `apply_patch` tools.
+    Secrets are denied regardless of path: `.env*` (except `.env.example`
+    and similar template suffixes), SSH keys, `.aws/credentials`,
+    `.gnupg/**`, `.docker/config.json`, `.kube/config`, `*.tfstate*`,
+    `*.pem`, `*.key`, `*.p12`, `*.keystore`, `*.kdbx`, `*.ovpn`,
+    `.netrc`, `.npmrc`, `.pypirc`, `.git-credentials`, and
+    `credentials.json`.
+  - **read**: defaults to `allow`, with the same secret deny-list mirrored
+    (so `.env` and friends cannot be exfiltrated via reads or MCP resource
+    fetches). `~/.config/opencode/**` is explicitly allowed for
+    self-inspection.
+  - **glob**, **grep**, **list**, **task**, **lsp**, **skill**: `allow`
+    (discovery, subagent dispatch, code intelligence, and skill loading
+    are required for normal agent UX).
+  - **external_directory**: defaults to `ask`; `/tmp/**`, `/var/tmp/**`,
+    and `~/.config/opencode/**` are allowed.
+  - **todowrite**, **question**: `allow` (benign UX tools).
+  - **webfetch**, **websearch**: `ask` (network egress can leak codebase
+    context; the user opts in per call).
+  - **doom_loop**: `ask` (OpenCode's safety net for repeated identical
+    tool calls).
 - **share**: `manual` (sessions are not shared without explicit action)
 - **watcher**: ignores `.git`, `node_modules`, `dist`, and `build`
 
