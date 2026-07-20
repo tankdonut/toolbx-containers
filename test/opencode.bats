@@ -83,6 +83,21 @@ load common.sh
     [ "$git_config_get" = "allow" ]
     [ "$sed_inplace" = "ask" ]
 
+    # --- gh CLI: read-only allowlist (representative samples);
+    #     gh api intentionally absent so it falls through to ask ---
+    gh_repo_view=$(echo "$config" | jq -r '.permission.bash["gh repo view"]')
+    gh_pr_view=$(echo "$config" | jq -r '.permission.bash["gh pr view *"]')
+    gh_pr_status=$(echo "$config" | jq -r '.permission.bash["gh pr status"]')
+    gh_run_list=$(echo "$config" | jq -r '.permission.bash["gh run list"]')
+    gh_search=$(echo "$config" | jq -r '.permission.bash["gh search *"]')
+    gh_api=$(echo "$config" | jq -r '.permission.bash["gh api *"]')
+    [ "$gh_repo_view" = "allow" ]
+    [ "$gh_pr_view" = "allow" ]
+    [ "$gh_pr_status" = "allow" ]
+    [ "$gh_run_list" = "allow" ]
+    [ "$gh_search" = "allow" ]
+    [ "$gh_api" = "null" ]
+
     # --- catastrophic bash denies (defense in depth) ---
     [ "$(echo "$config" | jq -r '.permission.bash["rm -rf /*"]')" = "deny" ]
     [ "$(echo "$config" | jq -r '.permission.bash["dd * of=/dev/*"]')" = "deny" ]
