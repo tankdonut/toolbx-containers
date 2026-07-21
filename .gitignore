@@ -4,4 +4,5 @@ dist/
 .venv/
 .ruff_cache/
 .omo/
+.agents/
 __pycache__/
