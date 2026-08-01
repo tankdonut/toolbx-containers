@@ -43,3 +43,7 @@ load common.sh
 @test "test starship is in PATH" {
 	check_path starship
 }
+
+@test "test direnv is in PATH" {
+	check_path direnv
+}
