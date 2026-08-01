@@ -54,7 +54,12 @@ _init_starship() {
 }
 _init_starship
 
+_init_direnv() {
+    eval "$(direnv hook zsh)"
+}
+_init_direnv
+
 autoload -U compinit
 compinit
 
-unset -f _init_starship pathmunge _src_etc_profile_d _src_plugins
+unset -f _init_starship _init_direnv pathmunge _src_etc_profile_d _src_plugins

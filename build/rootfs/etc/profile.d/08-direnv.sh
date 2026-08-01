@@ -1,8 +1,3 @@
-case "$(basename "$SHELL")" in
-	bash)
-		eval "$(direnv hook bash)"
-		;;
-	zsh)
-		eval "$(direnv hook zsh)"
-		;;
-esac
+if [ "$(basename "$SHELL")" = "bash" ]; then
+	eval "$(direnv hook bash)"
+fi
