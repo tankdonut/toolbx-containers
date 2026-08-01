@@ -1,174 +1,173 @@
-# AGENTS.md
+# TOOLBX-CONTAINERS CONTEXT
 
-Guidelines for automated coding agents operating in this repository.
+## OVERVIEW
 
-## Purpose
+Container images for [Toolbx](https://github.com/containers/toolbox): a Fedora
+variant and an Ubuntu variant. Each is a layered OCI image built from a
+Containerfile plus a vendored rootfs overlay (`build/rootfs/`), copied over the
+base image with `COPY rootfs/ /`. The `ghcr.io/tankdonut/tools` image layers
+extra binaries (for example, `direnv`) into `/vendor/bin/`. Build, test, and
+release are driven by Invoke tasks under `uv`.
 
-This project hosts container configurations and related tooling.
+For human contributor setup (asdf, podman, pre-commit install) and contribution
+workflow, see [CONTRIBUTING](CONTRIBUTING.md). This file is the source of truth
+for repository layout, conventions, and agent guardrails.
 
-For human contributor guidelines, see [CONTRIBUTING](CONTRIBUTING.md).
+## STRUCTURE
 
-Agents should prioritize safety, reproducibility, and minimal disruption to
-existing developer workflows. This file defines how agents are expected to
-behave, what they may change, and how they should communicate those changes.
+| Path | Role |
+|------|------|
+| `tasks/` | Invoke task definitions (`build.py`, `dev.py`, `config.py`) |
+| `test/` | Bats tests (`*.bats` + `common.sh` helper) |
+| `build/Containerfile` | Fedora toolbox image |
+| `build/Containerfile.ubuntu` | Ubuntu toolbox image |
+| `build/fedora-packages.txt` | Fedora dnf package list |
+| `build/ubuntu-packages.txt` | Ubuntu apt package list |
+| `build/rootfs/` | Vendored filesystem overlay, applied via `COPY rootfs/ /` |
+| `build/rootfs/etc/profile.d/` | Login/profile scripts, sourced alphabetically |
+| `build/rootfs/etc/zshrc` | zsh interactive init, layered on the stock Fedora `/etc/zshrc` |
+| `build/rootfs/etc/starship/` | Starship configuration |
+| `.github/workflows/` | CI pipeline definitions |
+| `.tool-versions` | asdf-pinned tools (hadolint, python, uv) |
+| `.env.example` | Build environment variable template |
+| `pyproject.toml` | Python deps (uv), ruff + pyright config |
+| `.pre-commit-config.yaml` | Pre-commit hooks |
+| `.markdownlint.json` | Markdown lint rules |
 
-## Where to Look
+## WHERE TO LOOK
 
-- `tasks/` - Invoke task definitions (`build.py`, `dev.py`, `config.py`)
-- `test/` - Bats test files (`*.bats` + `common.sh` helper)
-- `build/` - Containerfiles, package lists, rootfs overlay
-- `build/rootfs/` - Vendored container filesystem (profile scripts, configs)
-- `.github/workflows/` - CI pipeline definitions
-- `.tool-versions` - Pinned versions for ASDF-managed tools (hadolint, python,
-  uv)
-- `.env.example` - Environment variable template for build configuration
-- `pyproject.toml` - Python dependencies, ruff and pyright configuration
-- `.pre-commit-config.yaml` - Pre-commit hook definitions
-- `.markdownlint.json` - Markdown linting rules
+| Task | Location | Notes |
+|------|----------|-------|
+| Add a runtime package | `build/fedora-packages.txt` or `build/ubuntu-packages.txt` | Verify Fedora packages on <https://packages.fedoraproject.org/>; prefer minimal runtime over `-devel`. |
+| Add a login/profile script | `build/rootfs/etc/profile.d/NN-name.sh` | `00`-`xx` prefix; must be ksh-safe (see Conventions). |
+| Add a zsh-interactive hook | `build/rootfs/etc/zshrc` | Native zsh context; mirror the `_init_*` / `_src_*` pattern. |
+| Add an Invoke task | `tasks/*.py` | List with `uv run inv --list`. |
+| Add a test | `test/*.bats` | `load common.sh`. |
+| Change build args | `.env` (from `.env.example`) | `FEDORA_VERSION`, `UBUNTU_VERSION`, etc. |
+| Change base image or tag | `build/Containerfile*` | Requires explicit justification. |
 
-## Commands
+## CONVENTIONS
 
-All commands use the `uv run inv` prefix. Use variant-specific tasks instead of
-the generic `build.build` or `build.test`, which require extra arguments.
+### Profile scripts (`profile.d`)
 
-### Build
+- Sourced alphabetically; use a `00`-`xx` numeric prefix.
+- Sourced under zsh's `emulate -L ksh` (via `/etc/zprofile` and `/etc/zshrc`),
+  so they MUST be ksh-compatible POSIX sh: avoid zsh-native constructs such as
+  array subscript flags (`(I)`), arithmetic over array expansions, `autoload`,
+  ZLE widgets, or prompt substitution.
+- Put zsh-interactive hooks (`direnv hook zsh`, `starship init zsh`,
+  completion, plugins) in `build/rootfs/etc/zshrc`, not in `profile.d`.
+- Guard any bash-only `profile.d` logic with
+  `if [ "$(basename "$SHELL")" = "bash" ]`.
 
-- `uv run inv build.build-fedora` - Build the Fedora toolbox image
-- `uv run inv build.build-ubuntu` - Build the Ubuntu toolbox image
+### zshrc
 
-### Test
+- `build/rootfs/etc/zshrc` is the stock Fedora zsh RPM `/etc/zshrc`
+  (`pathmunge`, `_src_etc_profile_d`) with project blocks appended
+  (`_src_plugins`, `_init_starship`, `_init_direnv`, `compinit`).
+- Add new interactive setup as an `_init_<name>()` function, call it on the
+  next line, and add it to the final `unset -f` cleanup line.
+- Do not move zsh-interactive hooks into `profile.d` (they break under
+  `emulate -L ksh`).
 
-Requires a pre-built image.
+### Container builds
 
-- `uv run inv build.test-fedora` - Test the Fedora toolbox image
-- `uv run inv build.test-ubuntu` - Test the Ubuntu toolbox image
-- `uv run inv build.test --image <ref>` - Test an arbitrary image reference
-
-### Release
-
-Build, test, and push in sequence.
-
-- `uv run inv build.release-fedora` - Full pipeline for Fedora
-- `uv run inv build.release-ubuntu` - Full pipeline for Ubuntu
-
-Pass `--skip-tests` to skip the test step, or `--no-cache` to force a clean
-build.
-
-### Dev
-
-- `uv run inv dev.pre-commit` - Run all linters
-- `uv run inv dev.clean` - Remove the cache directory
-- `uv run inv dev.download-fonts` - Download Meslo Nerd Fonts into cache
-- `uv run inv --list` - List all available tasks
-
-## Conventions
-
-- Tests use bats framework in `test/` directory.
-- Two container variants: Fedora (`Containerfile`) and Ubuntu
+- Two variants only: Fedora (`Containerfile`) and Ubuntu
   (`Containerfile.ubuntu`).
-- Package lists: `build/fedora-packages.txt` and `build/ubuntu-packages.txt`.
-- Profile scripts in `build/rootfs/etc/profile.d/` are sourced alphabetically
-  (use `00`-`xx` prefix convention).
-- Python deps managed via `uv` (`pyproject.toml`), not system pip.
-- Tool versions pinned in `.tool-versions` (managed via asdf).
-- Pre-commit hooks: general hygiene (trailing whitespace, merge conflicts,
-  large files), hadolint (Containerfiles), ruff (Python),
-  markdownlint-cli2 (Markdown).
+- Keep builds deterministic and reproducible; avoid unnecessary dependencies.
+- Prefer the minimal runtime package over `-devel` variants unless headers or
+  static libraries are required.
+- Do not change base images or image tags without explicit justification in the
+  commit message.
 
-## Environment Configuration
+### Dependencies
 
-Build tasks read environment variables from `.env` (git-ignored). Copy
-`.env.example` to `.env` and adjust as needed:
+- Python packages are installed and run via `uv` (`pyproject.toml`), not system
+  pip. Prefer `uv run python ...` over invoking `python` directly.
+- Tool versions are pinned in `.tool-versions`, managed via asdf.
+- Do not assume system-level Python has project packages installed.
 
-- `DESTINATION_REGISTRY` - Registry hostname for image tags (default:
-  `localhost`)
-- `FEDORA_VERSION` - Fedora version for build args (default: `44`)
-- `UBUNTU_VERSION` - Ubuntu version for build args (default: `24.04`)
-- `IMAGE_NAMESPACE` - Override the image namespace (defaults to the git remote
-  owner)
-- `OCI_SOURCE_URL` - Override the OCI source URL label
-
-## Core Principles
-
-- Be safe: avoid destructive operations unless explicitly requested.
-- Be minimal: make the smallest change that solves the problem.
-- Be explicit: document assumptions in commit messages and PR descriptions.
-- Preserve intent: do not revert or reformat unrelated changes.
-- Be scoped: only modify files that are directly relevant to the task.
-
-## Scope of Authority
-
-- Agents may update container configs, package lists, and supporting scripts.
-- Agents may update documentation to reflect actual behavior.
-- Agents must not change base images, image tags, or core build logic without
-  explicit justification in the commit message.
-- Agents must not introduce new external services, network calls, or
-  credentials.
-- Agents must not commit secrets or modify CI settings unless explicitly
-  requested.
-
-## Editing Rules
+### Editing
 
 - Prefer updating existing files over creating new ones.
-- Keep changes scoped and focused; avoid drive-by refactors.
-- Maintain existing formatting and style conventions.
-- Use ASCII by default unless the file already requires Unicode.
-- Do not add comments unless they clarify non-obvious behavior.
+- Keep changes scoped; avoid drive-by refactors.
+- Maintain existing formatting and style; use ASCII by default.
+- Add comments only to clarify non-obvious behavior.
 - Do not reorganize sections or reorder lists unless required for correctness.
 
-## Git Workflow
+### Documentation
 
-- Never use destructive commands like `git reset --hard` unless explicitly requested.
-- Do not amend commits unless explicitly instructed.
-- Do not force-push to main/master.
-- Stage only relevant files.
-- Write concise commit messages that explain why the change is needed.
-- Reference related issues or context when available.
-- Clearly state any trade-offs or follow-up work in the PR description.
+- All Markdown must pass `markdownlint` (`.markdownlint.json`); code blocks and
+  tables are exempt from the 100-character line limit.
+- Surround headings and lists with blank lines; use fenced code blocks with
+  language identifiers; wrap links (no bare URLs).
+- Full rules are in [CONTRIBUTING](CONTRIBUTING.md).
 
-## Containers and Tooling
+## ANTI-PATTERNS
 
-- Do not change base images or image tags without justification.
-- Keep container builds deterministic.
-- Avoid introducing unnecessary dependencies.
-- Ensure builds remain reproducible and documented.
-- When adding packages, prefer the minimal runtime package over `-devel`
-  variants unless headers or static libraries are required.
-- When determining package availability for Fedora, use
-  <https://packages.fedoraproject.org/> to verify packages exist for the target
-  Fedora version.
+- **NEVER** put zsh-native hooks (`direnv hook zsh`, `starship init zsh`) in
+  `profile.d` -- they break under `emulate -L ksh`.
+- **NEVER** change base images, image tags, or core build logic without
+  explicit justification.
+- **NEVER** assume system Python has project packages -- use `uv run`.
+- **NEVER** commit secrets, tokens, credentials, or `.env`.
+- **NEVER** modify CI settings unless explicitly requested.
+- **NEVER** introduce new external services, network calls, or credentials.
+- **NEVER** use destructive git commands (`git reset --hard`), amend commits,
+  or force-push to `main` unless explicitly instructed.
 
-## Dependency Management
+## KEY DEPENDENCIES
 
-- Python packages are installed and executed via `uv`.
-- When running Python commands in tests or scripts,
-  prefer `uv run python ...` instead of invoking `python` directly.
-- Do not assume system-level Python has project packages installed.
-- Keep dependency resolution deterministic and consistent with the container build configuration.
+| Layer | Stack |
+|-------|-------|
+| Task runner | `uv` + Invoke (`pyproject.toml`, `tasks/`) |
+| Tests | Bats (`test/`) |
+| Lint | pre-commit: hadolint (Containerfiles), ruff (Python), markdownlint-cli2 (Markdown), plus hygiene hooks |
+| Tool pinning | asdf (`.tool-versions`): hadolint 2.14.0, python 3.14.6, uv 0.11.32 |
+| Base images | `quay.io/fedora/fedora-toolbox`, Ubuntu |
+| Layered tools | `ghcr.io/tankdonut/tools` -> `/vendor/bin/` |
 
-## Testing and Validation
+## COMMANDS
 
-- Run relevant build or lint steps before committing when applicable.
-- If validation cannot be run locally, clearly state what should be verified.
-- Do not ignore failing checks without explanation.
-- For package changes, ensure the container build still succeeds.
+```bash
+uv run inv build.build-fedora        # build Fedora image
+uv run inv build.build-ubuntu        # build Ubuntu image
+uv run inv build.test-fedora         # test Fedora image (needs pre-built image)
+uv run inv build.test-ubuntu         # test Ubuntu image (needs pre-built image)
+uv run inv build.test --image <ref>  # test an arbitrary image reference
+uv run inv build.release-fedora      # build + test + push (Fedora)
+uv run inv build.release-ubuntu      # build + test + push (Ubuntu)
+uv run inv dev.pre-commit            # run all linters
+uv run inv dev.clean                 # remove the cache directory
+uv run inv dev.download-fonts        # download Meslo Nerd Fonts into cache
+uv run inv --list                    # list all tasks
+```
 
-## Security
+Release tasks accept `--skip-tests` and `--no-cache`.
 
-- Never commit secrets, tokens, or credentials.
-- Treat environment files (e.g., `.env`) as sensitive.
-- Avoid adding network calls or external downloads without clear need.
+## ENVIRONMENT
 
-## Documentation
+Build tasks read `.env` (git-ignored). Copy `.env.example` to `.env`:
 
-- All Markdown files must pass `markdownlint` using the repository configuration.
-- Wrap prose at 100 characters; avoid trailing whitespace.
-- Surround headings and lists with blank lines.
-- Use fenced code blocks with language identifiers when possible.
-- Do not use bare URLs; wrap links in angle brackets or Markdown link syntax.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DESTINATION_REGISTRY` | `localhost` | Registry hostname for image tags |
+| `FEDORA_VERSION` | `44` | Fedora build arg |
+| `UBUNTU_VERSION` | `24.04` | Ubuntu build arg |
+| `IMAGE_NAMESPACE` | git remote owner | Override the image namespace |
+| `OCI_SOURCE_URL` | -- | Override the OCI source URL label |
 
-## When in Doubt
+## NOTES
 
-- Ask for clarification instead of guessing.
-- Prefer reversible changes.
-- Propose a minimal safe default and document the assumption.
+- Pre-commit hooks are active; run `uv run inv dev.pre-commit` before
+  committing.
+- `profile.d` is the login path (`/etc/zprofile` -> `/etc/profile`); `zshrc` is
+  the interactive path. The stock Fedora zsh RPM owns `pathmunge` and
+  `_src_etc_profile_d` in `/etc/zshrc` -- leave them intact.
+- The `ghcr.io/tankdonut/tools` layer provides binaries like `direnv` in
+  `/vendor/bin/`; shell hooks for them live in `zshrc` / `profile.d`, not the
+  package lists.
+- If validation cannot be run locally, state what should be verified; do not
+  ignore failing checks without explanation.
+- When in doubt, ask for clarification, prefer reversible changes, and document
+  assumptions in the commit message.
