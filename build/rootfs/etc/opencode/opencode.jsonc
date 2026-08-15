@@ -11,8 +11,6 @@
         // Tokens reserved to avoid exceeding model context limits
         "reserved": 10000
     },
-    // Default agent profile to use when none is specified
-    "default_agent": "build",
     // Additional instruction files loaded into the agent context
     "instructions": [
         "AGENTS.md"
