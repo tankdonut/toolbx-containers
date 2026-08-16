@@ -21,6 +21,11 @@
       "description": "Major updates require manual review.",
       "matchUpdateTypes": ["major"],
       "automerge": false
+    },
+    {
+      "description": "Tools container digest updates have no release timestamp; exempt from minimumReleaseAge.",
+      "matchDepNames": ["ghcr.io/tankdonut/tools"],
+      "minimumReleaseAge": null
     }
   ]
 }
