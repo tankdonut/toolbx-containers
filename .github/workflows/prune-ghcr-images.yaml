@@ -9,11 +9,24 @@ permissions:
   packages: write
 
 jobs:
+  versions:
+    runs-on: ubuntu-latest
+    outputs:
+      fedora: ${{ steps.versions.outputs.fedora }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Read pinned versions
+        id: versions
+        run: echo "fedora=$(cat .fedora-version)" >> "$GITHUB_OUTPUT"
+
   prune:
+    needs: versions
     uses: tankdonut/github-actions/.github/workflows/prune-ghcr.yaml@v1
     with:
       packages: '["fedora-toolbox"]'
-      exclude-tags: "44"
+      exclude-tags: ${{ needs.versions.outputs.fedora }}
       exclude-latest: true
       exclude-semver: true
       keep-n-tagged: "10"
