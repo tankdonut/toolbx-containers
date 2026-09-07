@@ -32,7 +32,7 @@ for repository layout, conventions, and agent guardrails.
 | `.fedora-version` | Pinned Fedora version (build arg source) |
 | `.ubuntu-version` | Pinned Ubuntu version (build arg source) |
 | `.env.example` | Build environment variable template |
-| `distrobox.ini` | Distrobox assemble manifest for both images |
+| `distrobox.ini` | Distrobox assemble manifest (Fedora only for now) |
 | `pyproject.toml` | Python deps (uv), ruff + pyright config |
 | `.pre-commit-config.yaml` | Pre-commit hooks |
 | `.markdownlint.json` | Markdown lint rules |
