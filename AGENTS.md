@@ -17,7 +17,7 @@ for repository layout, conventions, and agent guardrails.
 
 | Path | Role |
 |------|------|
-| `tasks/` | Invoke task definitions (`build.py`, `dev.py`, `config.py`) |
+| `tasks/` | Invoke task definitions (`build.py`, `dev.py`, `distrobox.py`, `config.py`) |
 | `test/` | Bats tests (`*.bats` + `common.sh` helper) |
 | `build/Containerfile` | Fedora toolbox image |
 | `build/Containerfile.ubuntu` | Ubuntu toolbox image |
@@ -29,7 +29,10 @@ for repository layout, conventions, and agent guardrails.
 | `build/rootfs/etc/starship/` | Starship configuration |
 | `.github/workflows/` | CI pipeline definitions |
 | `.tool-versions` | asdf-pinned tools (hadolint, python, uv) |
+| `.fedora-version` | Pinned Fedora version (build arg source) |
+| `.ubuntu-version` | Pinned Ubuntu version (build arg source) |
 | `.env.example` | Build environment variable template |
+| `distrobox.ini` | Distrobox assemble manifest for both images |
 | `pyproject.toml` | Python deps (uv), ruff + pyright config |
 | `.pre-commit-config.yaml` | Pre-commit hooks |
 | `.markdownlint.json` | Markdown lint rules |
@@ -43,7 +46,8 @@ for repository layout, conventions, and agent guardrails.
 | Add a zsh-interactive hook | `build/rootfs/etc/zshrc` | Native zsh context; mirror the `_init_*` / `_src_*` pattern. |
 | Add an Invoke task | `tasks/*.py` | List with `uv run inv --list`. |
 | Add a test | `test/*.bats` | `load common.sh`. |
-| Change build args | `.env` (from `.env.example`) | `FEDORA_VERSION`, `UBUNTU_VERSION`, etc. |
+| Change Fedora/Ubuntu version | `.fedora-version` / `.ubuntu-version` | Single source of truth; Containerfile ARGs carry no defaults. |
+| Change registry or namespace | `.env` (from `.env.example`) | `DESTINATION_REGISTRY`, `IMAGE_NAMESPACE`, `OCI_SOURCE_URL`. |
 | Change base image or tag | `build/Containerfile*` | Requires explicit justification. |
 
 ## CONVENTIONS
@@ -140,6 +144,10 @@ uv run inv build.release-ubuntu      # build + test + push (Ubuntu)
 uv run inv dev.pre-commit            # run all linters
 uv run inv dev.clean                 # remove the cache directory
 uv run inv dev.download-fonts        # download Meslo Nerd Fonts into cache
+uv run inv distrobox.create          # create containers from distrobox.ini
+uv run inv distrobox.create --replace # recreate existing containers
+uv run inv distrobox.upgrade         # upgrade packages inside containers
+uv run inv distrobox.rm              # remove containers from distrobox.ini
 uv run inv --list                    # list all tasks
 ```
 
@@ -147,13 +155,15 @@ Release tasks accept `--skip-tests` and `--no-cache`.
 
 ## ENVIRONMENT
 
-Build tasks read `.env` (git-ignored). Copy `.env.example` to `.env`:
+Fedora and Ubuntu versions are read from the committed `.fedora-version` and
+`.ubuntu-version` files at the repo root -- never from `.env`.
+
+Registry and namespace configuration comes from `.env` (git-ignored). Copy
+`.env.example` to `.env`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DESTINATION_REGISTRY` | `localhost` | Registry hostname for image tags |
-| `FEDORA_VERSION` | `44` | Fedora build arg |
-| `UBUNTU_VERSION` | `24.04` | Ubuntu build arg |
 | `IMAGE_NAMESPACE` | git remote owner | Override the image namespace |
 | `OCI_SOURCE_URL` | -- | Override the OCI source URL label |
 

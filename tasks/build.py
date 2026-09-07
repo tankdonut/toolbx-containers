@@ -9,17 +9,31 @@ from dotenv import load_dotenv
 from invoke.context import Context
 from invoke.tasks import task
 
-from config import BUILD_DIR, DIST_DIR, TEST_DIR
+from config import BUILD_DIR, DIST_DIR, ROOT_DIR, TEST_DIR
 
 load_dotenv()
 
-FEDORA_VERSION = os.getenv("FEDORA_VERSION", "44")
-UBUNTU_VERSION = os.getenv("UBUNTU_VERSION", "24.04")
 DESTINATION_REGISTRY = os.getenv("DESTINATION_REGISTRY", "localhost")
 IMAGE_NAMESPACE = os.getenv("IMAGE_NAMESPACE")
 OCI_SOURCE_URL = os.getenv("OCI_SOURCE_URL")
 
 USE_COLOR = True
+
+
+def read_version(name: str) -> str:
+    """Read a version from the repo-root `.<name>-version` file."""
+    version_file = ROOT_DIR / f".{name}-version"
+    try:
+        value = version_file.read_text(encoding="utf-8").strip()
+    except FileNotFoundError as err:
+        raise RuntimeError(f"Version file not found: {version_file}") from err
+    if not value:
+        raise RuntimeError(f"Version file is empty: {version_file}")
+    return value
+
+
+FEDORA_VERSION = read_version("fedora")
+UBUNTU_VERSION = read_version("ubuntu")
 
 
 def detect_runtime(requested: str | None = None) -> str:
@@ -186,7 +200,17 @@ def _save_image(c: Context, runtime: str, image_ref: str, image: str) -> None:
     c.run(f"{runtime} image save {shlex.quote(image_ref)} -o {shlex.quote(str(out_file))}")
 
 
-@task
+@task(
+    help={
+        "registry": "Registry hostname for image tags",
+        "image": "Image name without registry/namespace",
+        "containerfile": "Path to the Containerfile",
+        "build_args": "Build args to pass to the runtime",
+        "skip_if_exists": "Skip the build and only retag if the image exists",
+        "version_tag": "Extra version tag applied on main-branch builds",
+        "save": "Also export the image to dist/registry as a tar",
+    }
+)
 def build(
     c: Context,
     registry: str = DESTINATION_REGISTRY,
@@ -198,6 +222,7 @@ def build(
     version_tag: str | None = None,
     save: bool = False,
 ) -> None:
+    """Build a container image with generated tags and labels."""
     runtime = detect_runtime()
 
     build_args_list = []
@@ -248,6 +273,7 @@ def build(
 
 @task
 def build_fedora(c: Context, no_cache: bool = False) -> None:
+    """Build the Fedora toolbox image."""
     build(
         c,
         registry=DESTINATION_REGISTRY,
@@ -262,6 +288,7 @@ def build_fedora(c: Context, no_cache: bool = False) -> None:
 
 @task
 def build_ubuntu(c: Context, no_cache: bool = False) -> None:
+    """Build the Ubuntu toolbox image."""
     build(
         c,
         registry=DESTINATION_REGISTRY,
@@ -274,7 +301,13 @@ def build_ubuntu(c: Context, no_cache: bool = False) -> None:
     )
 
 
-@task
+@task(
+    help={
+        "image": "Image reference to test (must already exist locally)",
+        "verbose": "Show full output of each test case",
+        "runtime": "Force podman or docker instead of autodetection",
+    }
+)
 def test(
     c: Context,
     image: str,
@@ -283,6 +316,7 @@ def test(
     no_build: bool = False,
     no_color: bool = False,
 ) -> None:
+    """Run the Bats test suite inside a pre-built image."""
     global USE_COLOR
     USE_COLOR = not no_color
 
@@ -326,6 +360,7 @@ def test(
 
 @task
 def test_fedora(c: Context, verbose: bool = False) -> None:
+    """Test the Fedora image built from the current commit."""
     namespace = IMAGE_NAMESPACE or resolve_namespace(get_git_context()["remote_url"])
     image_ref = f"{DESTINATION_REGISTRY}/{namespace}/fedora-toolbox:{get_commit_sha()}"
     test(
@@ -337,6 +372,7 @@ def test_fedora(c: Context, verbose: bool = False) -> None:
 
 @task
 def test_ubuntu(c: Context, verbose: bool = False) -> None:
+    """Test the Ubuntu image built from the current commit."""
     namespace = IMAGE_NAMESPACE or resolve_namespace(get_git_context()["remote_url"])
     image_ref = f"{DESTINATION_REGISTRY}/{namespace}/ubuntu-toolbox:{get_commit_sha()}"
     test(
@@ -346,7 +382,13 @@ def test_ubuntu(c: Context, verbose: bool = False) -> None:
     )
 
 
-@task
+@task(
+    help={
+        "image": "Image name without registry/namespace",
+        "registry": "Registry hostname to push to",
+        "version_tag": "Extra version tag applied on main-branch builds",
+    }
+)
 def push(
     c: Context,
     image: str,
@@ -354,6 +396,7 @@ def push(
     runtime: str | None = None,
     version_tag: str | None = None,
 ) -> None:
+    """Push all generated tags for an image to the registry."""
     runtime = detect_runtime(runtime)
 
     tags, _ = generate_metadata(registry, image, version_tag)
@@ -369,6 +412,7 @@ def release_fedora(
     no_cache: bool = False,
     skip_tests: bool = False,
 ) -> None:
+    """Build, test, and push the Fedora image."""
     build_fedora(c, no_cache=no_cache)
     if not skip_tests:
         test_fedora(c)
@@ -386,6 +430,7 @@ def release_ubuntu(
     no_cache: bool = False,
     skip_tests: bool = False,
 ) -> None:
+    """Build, test, and push the Ubuntu image."""
     build_ubuntu(c, no_cache=no_cache)
     if not skip_tests:
         test_ubuntu(c)
