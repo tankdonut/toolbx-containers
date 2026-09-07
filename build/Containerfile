@@ -39,6 +39,7 @@ RUN curl -sSL -o /tmp/bun.zip "https://github.com/oven-sh/bun/releases/latest/do
     rm -rf /tmp/bun.zip /tmp/bun
 
 RUN ln -sf /usr/bin/host-spawn /usr/local/bin/buildah && \
+    ln -sf /usr/bin/host-spawn /usr/local/bin/distrobox && \
     ln -sf /usr/bin/host-spawn /usr/local/bin/docker && \
     ln -sf /usr/bin/host-spawn /usr/local/bin/docker-compose && \
     ln -sf /usr/bin/host-spawn /usr/local/bin/flatpak && \
