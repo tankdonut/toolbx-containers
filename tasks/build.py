@@ -9,17 +9,31 @@ from dotenv import load_dotenv
 from invoke.context import Context
 from invoke.tasks import task
 
-from config import BUILD_DIR, DIST_DIR, TEST_DIR
+from config import BUILD_DIR, DIST_DIR, ROOT_DIR, TEST_DIR
 
 load_dotenv()
 
-FEDORA_VERSION = os.getenv("FEDORA_VERSION", "44")
-UBUNTU_VERSION = os.getenv("UBUNTU_VERSION", "24.04")
 DESTINATION_REGISTRY = os.getenv("DESTINATION_REGISTRY", "localhost")
 IMAGE_NAMESPACE = os.getenv("IMAGE_NAMESPACE")
 OCI_SOURCE_URL = os.getenv("OCI_SOURCE_URL")
 
 USE_COLOR = True
+
+
+def read_version(name: str) -> str:
+    """Read a version from the repo-root `.<name>-version` file."""
+    version_file = ROOT_DIR / f".{name}-version"
+    try:
+        value = version_file.read_text(encoding="utf-8").strip()
+    except FileNotFoundError as err:
+        raise RuntimeError(f"Version file not found: {version_file}") from err
+    if not value:
+        raise RuntimeError(f"Version file is empty: {version_file}")
+    return value
+
+
+FEDORA_VERSION = read_version("fedora")
+UBUNTU_VERSION = read_version("ubuntu")
 
 
 def detect_runtime(requested: str | None = None) -> str:
