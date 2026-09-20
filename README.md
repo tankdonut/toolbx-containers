@@ -7,7 +7,7 @@ Container images intended for use with
 
 | Variant | Image | Containerfile |
 |---------|-------|---------------|
-| Fedora 44 | `ghcr.io/tankdonut/fedora-toolbox:44` | `build/Containerfile` |
+| Fedora 45 | `ghcr.io/tankdonut/fedora-toolbox:45` | `build/Containerfile` |
 | Ubuntu 24.04 | `build/Containerfile.ubuntu` | `build/Containerfile.ubuntu` |
 
 ## Quick Start
@@ -15,8 +15,8 @@ Container images intended for use with
 Pull a prebuilt image and create a Toolbx container:
 
 ```bash
-podman pull ghcr.io/tankdonut/fedora-toolbox:44
-toolbox create --image ghcr.io/tankdonut/fedora-toolbox:44
+podman pull ghcr.io/tankdonut/fedora-toolbox:45
+toolbox create --image ghcr.io/tankdonut/fedora-toolbox:45
 toolbox enter
 ```
 
