@@ -128,18 +128,18 @@ uv run inv build.test --image localhost/fedora-toolbox:abc1234 --verbose
 
 ## Dev Tasks
 
-Utility tasks for day-to-day development:
+Utility commands for day-to-day development, provided by `make.sh`:
 
 ```bash
-uv run inv dev.clean            # Remove the cache directory
-uv run inv dev.download-fonts   # Download Meslo Nerd Fonts into cache
-uv run inv dev.pre-commit       # Run all pre-commit hooks
+./make.sh clean            # Remove the cache directory
+./make.sh download-fonts   # Download Meslo Nerd Fonts into cache
+./make.sh pre-commit       # Run all pre-commit hooks
 ```
 
-- `dev.clean` deletes the `cache/` directory used for downloaded artifacts.
-- `dev.download-fonts` fetches the Meslo Nerd Fonts zip into `cache/`. The
+- `clean` deletes the `cache/` directory used for downloaded artifacts.
+- `download-fonts` fetches the Meslo Nerd Fonts zip into `cache/`. The
   build process references these fonts.
-- `dev.pre-commit` runs `uv run pre-commit run --all` across the repository.
+- `pre-commit` runs `uv run pre-commit run --all` across the repository.
   Useful when you want to check everything without committing.
 
 ## Linting and Hooks
@@ -151,10 +151,10 @@ trigger it manually:
 uv run pre-commit run --all-files
 ```
 
-Or use the Invoke shortcut:
+Or use the make.sh shortcut:
 
 ```bash
-uv run inv dev.pre-commit
+./make.sh pre-commit
 ```
 
 ### Configured Hooks

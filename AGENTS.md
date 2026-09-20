@@ -17,7 +17,7 @@ for repository layout, conventions, and agent guardrails.
 
 | Path | Role |
 |------|------|
-| `tasks/` | Invoke task definitions (`build.py`, `dev.py`, `distrobox.py`, `config.py`) |
+| `tasks/` | Invoke task definitions (`build.py`, `distrobox.py`, `config.py`) |
 | `test/` | Bats tests (`*.bats` + `common.sh` helper) |
 | `build/Containerfile` | Fedora toolbox image |
 | `build/Containerfile.ubuntu` | Ubuntu toolbox image |
@@ -141,9 +141,9 @@ uv run inv build.test-ubuntu         # test Ubuntu image (needs pre-built image)
 uv run inv build.test --image <ref>  # test an arbitrary image reference
 uv run inv build.release-fedora      # build + test + push (Fedora)
 uv run inv build.release-ubuntu      # build + test + push (Ubuntu)
-uv run inv dev.pre-commit            # run all linters
-uv run inv dev.clean                 # remove the cache directory
-uv run inv dev.download-fonts        # download Meslo Nerd Fonts into cache
+./make.sh pre-commit                 # run all linters
+./make.sh clean                      # remove the cache directory
+./make.sh download-fonts             # download Meslo Nerd Fonts into cache
 uv run inv distrobox.create          # create containers from distrobox.ini
 uv run inv distrobox.create --replace # recreate existing containers
 uv run inv distrobox.upgrade         # upgrade packages inside containers
@@ -169,8 +169,7 @@ Registry and namespace configuration comes from `.env` (git-ignored). Copy
 
 ## NOTES
 
-- Pre-commit hooks are active; run `uv run inv dev.pre-commit` before
-  committing.
+- Pre-commit hooks are active; run `./make.sh pre-commit` before committing.
 - `profile.d` is the login path (`/etc/zprofile` -> `/etc/profile`); `zshrc` is
   the interactive path. The stock Fedora zsh RPM owns `pathmunge` and
   `_src_etc_profile_d` in `/etc/zshrc` -- leave them intact.
