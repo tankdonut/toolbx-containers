@@ -20,9 +20,9 @@ OCI_SOURCE_URL = os.getenv("OCI_SOURCE_URL")
 USE_COLOR = True
 
 
-def read_version(name: str) -> str:
-    """Read a version from the repo-root `.<name>-version` file."""
-    version_file = ROOT_DIR / f".{name}-version"
+def read_version(name: str, directory: Path = ROOT_DIR) -> str:
+    """Read a version from the `.<name>-version` file in `directory`."""
+    version_file = directory / f".{name}-version"
     try:
         value = version_file.read_text(encoding="utf-8").strip()
     except FileNotFoundError as err:
@@ -32,8 +32,8 @@ def read_version(name: str) -> str:
     return value
 
 
-FEDORA_VERSION = read_version("fedora")
-UBUNTU_VERSION = read_version("ubuntu")
+FEDORA_VERSION = read_version("fedora", BUILD_DIR)
+UBUNTU_VERSION = read_version("ubuntu", ROOT_DIR)
 
 
 def detect_runtime(requested: str | None = None) -> str:
