@@ -29,7 +29,7 @@ for repository layout, conventions, and agent guardrails.
 | `build/rootfs/etc/starship/` | Starship configuration |
 | `.github/workflows/` | CI pipeline definitions |
 | `.tool-versions` | asdf-pinned tools (hadolint, python, uv) |
-| `.fedora-version` | Pinned Fedora version (build arg source) |
+| `build/.fedora-version` | Pinned Fedora version (build arg source) |
 | `.ubuntu-version` | Pinned Ubuntu version (build arg source) |
 | `.env.example` | Build environment variable template |
 | `distrobox.ini` | Distrobox assemble manifest (Fedora only for now) |
@@ -46,7 +46,7 @@ for repository layout, conventions, and agent guardrails.
 | Add a zsh-interactive hook | `build/rootfs/etc/zshrc` | Native zsh context; mirror the `_init_*` / `_src_*` pattern. |
 | Add an Invoke task | `tasks/*.py` | List with `uv run inv --list`. |
 | Add a test | `test/*.bats` | `load common.sh`. |
-| Change Fedora/Ubuntu version | `.fedora-version` / `.ubuntu-version` | Single source of truth; Containerfile ARGs carry no defaults. |
+| Change Fedora/Ubuntu version | `build/.fedora-version` / `.ubuntu-version` | Single source of truth; Containerfile ARGs carry no defaults. |
 | Change registry or namespace | `.env` (from `.env.example`) | `DESTINATION_REGISTRY`, `IMAGE_NAMESPACE`, `OCI_SOURCE_URL`. |
 | Change base image or tag | `build/Containerfile*` | Requires explicit justification. |
 
@@ -155,8 +155,8 @@ Release tasks accept `--skip-tests` and `--no-cache`.
 
 ## ENVIRONMENT
 
-Fedora and Ubuntu versions are read from the committed `.fedora-version` and
-`.ubuntu-version` files at the repo root -- never from `.env`.
+Fedora and Ubuntu versions are read from the committed `build/.fedora-version`
+and `.ubuntu-version` files -- never from `.env`.
 
 Registry and namespace configuration comes from `.env` (git-ignored). Copy
 `.env.example` to `.env`:

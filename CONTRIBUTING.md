@@ -56,10 +56,11 @@ Copy `.env.example` to `.env` and adjust values if you plan to push images:
 cp .env.example .env
 ```
 
-Fedora and Ubuntu versions are pinned in [`.fedora-version`](.fedora-version)
-and [`.ubuntu-version`](.ubuntu-version) at the repository root. Edit those
-files to change the versions being built; they are the single source of truth
-for the corresponding Containerfile build args.
+Fedora and Ubuntu versions are pinned in
+[`build/.fedora-version`](build/.fedora-version) and
+[`.ubuntu-version`](.ubuntu-version). Edit those files to change the versions
+being built; they are the single source of truth for the corresponding
+Containerfile build args.
 
 ## Build Tasks
 
