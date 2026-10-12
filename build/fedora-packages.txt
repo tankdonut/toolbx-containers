@@ -32,9 +32,6 @@ google-noto-color-emoji-fonts
 # c / c++
 gcc-c++
 
-# go
-go
-
 # misc
 alien
 android-tools
@@ -81,21 +78,24 @@ vulkan-loader
 wl-clipboard
 xz
 
+# needed for building pythons via asdf
+bzip2-devel
+libffi-devel
+xz-devel
+zlib-devel
+
 # node
 nodejs
 npm
 pnpm
 
 # python
-conda
-poetry
 pre-commit
 python-unversioned-command
 python3
 python3-devel
 python3-dotenv
 python3-invoke
-python3-poetry
 python3-pip
 python3-setuptools
 python3-setuptools-rust

@@ -6,10 +6,6 @@ function check_python_package() {
 	uv run python -c "import $1"
 }
 
-@test "test conda is in PATH" {
-	check_path conda
-}
-
 @test "test pip is in PATH" {
 	check_path pip
 }
@@ -20,15 +16,6 @@ function check_python_package() {
 
 @test "test python executes" {
 	run python -c "print('ok')"
-	[ "$status" -eq 0 ]
-}
-
-@test "test poetry is in PATH" {
-	check_path poetry
-}
-
-@test "test poetry reports version" {
-	run poetry --version
 	[ "$status" -eq 0 ]
 }
 
