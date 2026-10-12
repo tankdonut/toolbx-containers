@@ -22,12 +22,6 @@ RUN dnf install -y --exclude=nodejs22-docs,nodejs22-full-i18n $(awk '!/^($|#)/ {
     dnf clean all && \
     find /usr/share/locale -mindepth 1 -maxdepth 1 -type d ! -name 'en*' -exec rm -rf {} +
 
-# https://librewolf.net/installation/fedora/
-# hadolint ignore=DL3041
-RUN dnf copr enable -y bgstack15/AfterMozilla && \
-    dnf install --refresh -y librewolf && \
-    dnf clean all
-
 # hadolint ignore=DL3041
 RUN dnf install -y libxshmfence && \
     dnf install -y codium && \

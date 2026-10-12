@@ -36,10 +36,6 @@ load common.sh
 	check_path jq
 }
 
-@test "test librewolf is in PATH" {
-	check_path librewolf
-}
-
 @test "test starship is in PATH" {
 	check_path starship
 }
