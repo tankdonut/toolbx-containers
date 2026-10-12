@@ -18,7 +18,7 @@ COPY fedora-packages.txt /vendor/
 COPY rootfs/etc/yum.repos.d/ /etc/yum.repos.d/
 
 # hadolint ignore=SC2046,DL3016,DL3041
-RUN dnf install -y --excludepkgs=nodejs22-docs,nodejs22-full-i18n $(awk '!/^($|#)/ { print $1 }' /vendor/fedora-packages.txt) && \
+RUN dnf install -y --exclude=nodejs22-docs,nodejs22-full-i18n $(awk '!/^($|#)/ { print $1 }' /vendor/fedora-packages.txt) && \
     dnf clean all && \
     find /usr/share/locale -mindepth 1 -maxdepth 1 -type d ! -name 'en*' -exec rm -rf {} +
 
