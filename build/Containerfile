@@ -18,7 +18,7 @@ COPY fedora-packages.txt /vendor/
 COPY rootfs/etc/yum.repos.d/ /etc/yum.repos.d/
 
 # hadolint ignore=SC2046,DL3016,DL3041
-RUN dnf install -y $(awk '!/^($|#)/ { print $1 }' /vendor/fedora-packages.txt) && \
+RUN dnf install -y --exclude=nodejs22-docs,nodejs22-full-i18n $(awk '!/^($|#)/ { print $1 }' /vendor/fedora-packages.txt) && \
     dnf clean all && \
     find /usr/share/locale -mindepth 1 -maxdepth 1 -type d ! -name 'en*' -exec rm -rf {} +
 
@@ -31,7 +31,8 @@ RUN dnf copr enable -y bgstack15/AfterMozilla && \
 # hadolint ignore=DL3041
 RUN dnf install -y libxshmfence && \
     dnf install -y codium && \
-    dnf clean all
+    dnf clean all && \
+    find /usr/lib64/chromium-browser/locales /usr/share/codium/locales -name '*.pak' ! -name 'en*.pak' -delete
 
 RUN curl -sSL -o /tmp/bun.zip "https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64.zip" && \
     unzip /tmp/bun.zip -d /tmp/bun && \
@@ -50,7 +51,8 @@ RUN ln -sf /usr/bin/host-spawn /usr/local/bin/buildah && \
     ln -sf /usr/bin/host-spawn /usr/local/bin/rpm-ostree
 
 # hadolint ignore=DL3016,DL3059
-RUN npm install -g playwright && \
+RUN npm install -g playwright --cache /tmp/npm-cache && \
+    rm -rf /tmp/npm-cache && \
     ln -sf /usr/bin/chromium-browser /usr/bin/chromium && \
     mkdir -p /opt/google/chrome && \
     ln -sf /usr/bin/chromium-browser /opt/google/chrome/chrome
