@@ -4,8 +4,6 @@ chromium
 # containers
 helm
 kubernetes-client
-kubernetes-kubeadm
-moby-engine
 
 # file archives
 p7zip
@@ -42,7 +40,6 @@ alien
 android-tools
 bats
 bind-utils
-clamav
 ffmpeg
 ffmpeg-devel
 gh

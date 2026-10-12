@@ -10,7 +10,8 @@ ARG FEDORA_VERSION
 # hadolint ignore=SC2046,DL3016,DL3041
 RUN dnf install -y "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm" \
     "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm" && \
-    dnf clean all
+    dnf clean all && \
+    printf 'tsflags=nodocs\ninstall_langs=en_US\n' >> /etc/dnf/dnf.conf
 
 COPY fedora-packages.txt /vendor/
 
@@ -18,7 +19,8 @@ COPY rootfs/etc/yum.repos.d/ /etc/yum.repos.d/
 
 # hadolint ignore=SC2046,DL3016,DL3041
 RUN dnf install -y $(awk '!/^($|#)/ { print $1 }' /vendor/fedora-packages.txt) && \
-    dnf clean all
+    dnf clean all && \
+    find /usr/share/locale -mindepth 1 -maxdepth 1 -type d ! -name 'en*' -exec rm -rf {} +
 
 # https://librewolf.net/installation/fedora/
 # hadolint ignore=DL3041
@@ -53,11 +55,9 @@ RUN npm install -g playwright && \
     mkdir -p /opt/google/chrome && \
     ln -sf /usr/bin/chromium-browser /opt/google/chrome/chrome
 
-COPY rootfs/usr/share/fonts/ /usr/share/fonts/
+COPY rootfs/ /
 
 RUN fc-cache -f
-
-COPY rootfs/ /
 
 COPY --from=tools /dist/ /vendor/bin/
 
