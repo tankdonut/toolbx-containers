@@ -1,7 +1,7 @@
 ARG UBUNTU_VERSION
 
 # hadolint ignore=DL3007
-FROM ghcr.io/tankdonut/tools:latest@sha256:5437083026339344f04584a628988054b0dfd063677ec94ccdea2fa0637be620 as tools
+FROM ghcr.io/tankdonut/tools:latest@sha256:3685ef101df5dab9ac92ff951db74dc134352c2951b0064cdda223a6b3ca479b as tools
 
 FROM docker.io/library/ubuntu:${UBUNTU_VERSION}
 
