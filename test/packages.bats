@@ -14,6 +14,10 @@ load common.sh
 	check_path codium
 }
 
+@test "test ghostty is in PATH" {
+	check_path ghostty
+}
+
 @test "test flux is in PATH" {
 	check_path flux
 }
